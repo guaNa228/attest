@@ -1,0 +1,4 @@
+.env
+attest.exe
+.vscode/
+sqlc.yaml
