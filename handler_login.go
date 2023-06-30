@@ -28,7 +28,7 @@ func (apiCfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := apiCfg.DB.GetUser(r.Context(), db.GetUserParams{
+	user, err := apiCfg.DB.GetUserByCredentials(r.Context(), db.GetUserByCredentialsParams{
 		Login:    params.Login,
 		Password: params.Password,
 	})

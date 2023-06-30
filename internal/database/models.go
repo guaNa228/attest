@@ -11,13 +11,14 @@ import (
 )
 
 type User struct {
-	ID        uuid.UUID
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Name      string
-	Login     string
-	Password  string
-	Role      string
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Name      string `json:"name"`
+	Login     string `json:"login"`
+	Password  string `json:"-"`
+	Role      string `json:"role"`
+	GroupID   uuid.NullUUID `json:"group_id"`
 }
 
 type Group struct {

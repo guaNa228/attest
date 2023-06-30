@@ -6,7 +6,8 @@ INSERT INTO users(
         name,
         login,
         password,
-        role
+        role,
+        group_id
     )
 VALUES (
         $1,
@@ -15,7 +16,8 @@ VALUES (
         $4,
         $5,
         $6,
-        $7
+        $7,
+        $8
     )
 RETURNING *;
 -- name: GetUserByCredentials :one
@@ -27,3 +29,10 @@ WHERE login = $1
 SELECT *
 FROM users
 WHERE id = $1;
+-- name: UpdateStudentsGroup :one
+UPDATE users
+SET group_id = $2,
+    updated_at = NOW()
+WHERE id = $1
+    and role = "student"
+RETURNING *;

@@ -12,10 +12,11 @@ import (
 
 func (apiCfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request, user db.User) {
 	type parameters struct {
-		Name     string `json:"name"`
-		Login    string `json:"login"`
-		Password string `json:"password"`
-		Role     string `json:"role"`
+		Name     string        `json:"name"`
+		Login    string        `json:"login"`
+		Password string        `json:"password"`
+		Role     string        `json:"role"`
+		Group_id uuid.NullUUID `json:"group_id"`
 	}
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
@@ -33,6 +34,7 @@ func (apiCfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Reques
 		Login:     params.Login,
 		Password:  params.Password,
 		Role:      params.Role,
+		GroupID:   params.Group_id,
 	})
 
 	if err != nil {
@@ -40,7 +42,7 @@ func (apiCfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	respondWithJSON(w, 201, databaseUserToUser(userToCreate))
+	respondWithJSON(w, 201, userToCreate)
 }
 
 func (apiCfg *apiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request, user db.User) {

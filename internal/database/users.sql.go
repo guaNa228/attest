@@ -20,7 +20,8 @@ INSERT INTO users(
         name,
         login,
         password,
-        role
+        role,
+        group_id
     )
 VALUES (
         $1,
@@ -29,9 +30,10 @@ VALUES (
         $4,
         $5,
         $6,
-        $7
+        $7,
+        $8
     )
-RETURNING id, created_at, updated_at, name, login, password, role
+RETURNING id, created_at, updated_at, name, login, password, role, group_id
 `
 
 type CreateUserParams struct {
@@ -42,6 +44,7 @@ type CreateUserParams struct {
 	Login     string
 	Password  string
 	Role      string
+	GroupID   uuid.NullUUID
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -53,6 +56,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Login,
 		arg.Password,
 		arg.Role,
+		arg.GroupID,
 	)
 	var i User
 	err := row.Scan(
@@ -63,24 +67,25 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Login,
 		&i.Password,
 		&i.Role,
+		&i.GroupID,
 	)
 	return i, err
 }
 
-const getUser = `-- name: GetUser :one
-SELECT id, created_at, updated_at, name, login, password, role
+const getUserByCredentials = `-- name: GetUserByCredentials :one
+SELECT id, created_at, updated_at, name, login, password, role, group_id
 FROM users
 WHERE login = $1
     and password = $2
 `
 
-type GetUserParams struct {
+type GetUserByCredentialsParams struct {
 	Login    string
 	Password string
 }
 
-func (q *Queries) GetUser(ctx context.Context, arg GetUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUser, arg.Login, arg.Password)
+func (q *Queries) GetUserByCredentials(ctx context.Context, arg GetUserByCredentialsParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByCredentials, arg.Login, arg.Password)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -90,12 +95,13 @@ func (q *Queries) GetUser(ctx context.Context, arg GetUserParams) (User, error) 
 		&i.Login,
 		&i.Password,
 		&i.Role,
+		&i.GroupID,
 	)
 	return i, err
 }
 
 const getUserById = `-- name: GetUserById :one
-SELECT id, created_at, updated_at, name, login, password, role
+SELECT id, created_at, updated_at, name, login, password, role, group_id
 FROM users
 WHERE id = $1
 `
@@ -111,6 +117,37 @@ func (q *Queries) GetUserById(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.Login,
 		&i.Password,
 		&i.Role,
+		&i.GroupID,
+	)
+	return i, err
+}
+
+const updateStudentsGroup = `-- name: UpdateStudentsGroup :one
+UPDATE users
+SET group_id = $2,
+    updated_at = NOW()
+WHERE id = $1
+    and role = "student"
+RETURNING id, created_at, updated_at, name, login, password, role, group_id
+`
+
+type UpdateStudentsGroupParams struct {
+	ID      uuid.UUID
+	GroupID uuid.NullUUID
+}
+
+func (q *Queries) UpdateStudentsGroup(ctx context.Context, arg UpdateStudentsGroupParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateStudentsGroup, arg.ID, arg.GroupID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Name,
+		&i.Login,
+		&i.Password,
+		&i.Role,
+		&i.GroupID,
 	)
 	return i, err
 }
