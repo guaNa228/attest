@@ -74,6 +74,10 @@ func main() {
 	v1Router.Post("/class", apiCfg.middlewareAuth(apiCfg.handlerCreateClass, []string{}))
 	v1Router.Delete("/class/{classToDeleteID}", apiCfg.middlewareAuth(apiCfg.handlerDeleteClass, []string{}))
 
+	v1Router.Post("/semesterActivity", apiCfg.middlewareAuth(apiCfg.handlerCreateSemesterActivity, []string{}))
+	v1Router.Post("/semesterActivity/{semesterActivityToUpdateID}", apiCfg.middlewareAuth(apiCfg.handlerUpdateSemesterActivity, []string{}))
+	v1Router.Delete("/semesterActivity/{semesterActivityToDeleteID}", apiCfg.middlewareAuth(apiCfg.handlerDeleteSemesterActivity, []string{}))
+
 	router.Mount("/v1", v1Router)
 
 	srv := &http.Server{

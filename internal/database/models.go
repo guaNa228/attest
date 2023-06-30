@@ -29,6 +29,15 @@ type Group struct {
 }
 
 type Class struct {
-	ID   uuid.UUID
-	Name string
+	ID   uuid.UUID `json:"id"`
+	Name string `json:"name"`
+}
+
+type SemesterActivity struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	ClassID   uuid.UUID `json:"class_id"`
+	GroupID   uuid.UUID `json:"group_id"`
+	TeacherID uuid.UUID `json:"teacher_id"`
 }
