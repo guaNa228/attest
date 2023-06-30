@@ -19,7 +19,9 @@ CREATE TABLE attestation (
     student_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     month month_enum NOT NULL,
     result BOOL,
+    comment TEXT,
     UNIQUE(semester_activity_id, month, student_id)
 );
 -- +goose Down 
+DROP TYPE month_enum;
 DROP TABLE attestation;

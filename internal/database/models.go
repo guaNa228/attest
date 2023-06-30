@@ -71,6 +71,7 @@ type Attestation struct {
 	StudentID          uuid.UUID
 	Month              MonthEnum
 	Result             sql.NullBool
+	Comment            sql.NullString
 }
 
 type User struct {

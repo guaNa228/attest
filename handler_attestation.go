@@ -38,6 +38,7 @@ func (apiCfg *apiConfig) handleAttestationSpawn(w http.ResponseWriter, r *http.R
 			SemesterActivityID: preAttestationItem.SemesterActivityID,
 			Month:              db.MonthEnum(params.MonthEnum),
 			Result:             sql.NullBool{Valid: false},
+			Comment:            sql.NullString{Valid: false},
 		})
 	}
 	fmt.Println(len(attestationData))
@@ -51,6 +52,14 @@ func (apiCfg *apiConfig) handleAttestationSpawn(w http.ResponseWriter, r *http.R
 
 	respondWithJSON(w, 200, struct{}{})
 }
+
+// func (apiCfg *apiConfig) handleAttestationSpawn(w http.ResponseWriter, r *http.Request, user db.User) {
+// 	if user.Role != "teacher" {
+// 		respondWithError(w, 400, "You are not allowed here")
+// 		return
+// 	}
+
+// }
 
 // func stubAttestation(n int, index string) []*db.Attestation {
 // 	result := []*db.Attestation{}

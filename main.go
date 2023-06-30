@@ -80,6 +80,8 @@ func main() {
 
 	v1Router.Post("/attestation", apiCfg.middlewareAuth(apiCfg.handleAttestationSpawn, []string{}))
 
+	// v1Router.Get("/", apiCfg.middlewareAuth(apiCfg.getAttestationData, []string{"teacher"}))
+
 	router.Mount("/v1", v1Router)
 
 	srv := &http.Server{

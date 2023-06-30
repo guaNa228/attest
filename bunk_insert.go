@@ -18,7 +18,7 @@ func fillTypeData(v interface{}) ([]interface{}, error) {
 	case Group:
 		return []interface{}{x.ID, x.CreatedAt, x.UpdatedAt, x.Name, x.Code}, nil
 	case db.Attestation:
-		return []interface{}{x.ID, x.SemesterActivityID, x.StudentID, x.Month, nil}, nil
+		return []interface{}{x.ID, x.SemesterActivityID, x.StudentID, x.Month, nil, nil}, nil
 	default:
 		return []interface{}{}, fmt.Errorf("unsupported type %t thrown for bunk creation", x)
 	}
@@ -26,7 +26,7 @@ func fillTypeData(v interface{}) ([]interface{}, error) {
 
 var insertContextByTypes = map[string][]string{
 	"groups":      {"id", "created_at", "updated_at", "name", "code"},
-	"attestation": {"id", "semester_activity_id", "student_id", "month", "result"},
+	"attestation": {"id", "semester_activity_id", "student_id", "month", "result", "comment"},
 }
 
 func itemsBunkCreate[T any](items []*T, typeTitle string) []error {
