@@ -53,13 +53,20 @@ func (apiCfg *apiConfig) handleAttestationSpawn(w http.ResponseWriter, r *http.R
 	respondWithJSON(w, 200, struct{}{})
 }
 
-// func (apiCfg *apiConfig) handleAttestationSpawn(w http.ResponseWriter, r *http.Request, user db.User) {
-// 	if user.Role != "teacher" {
-// 		respondWithError(w, 400, "You are not allowed here")
-// 		return
-// 	}
+func (apiCfg *apiConfig) handleAttestationGet(w http.ResponseWriter, r *http.Request, user db.User) {
+	if user.Role == "teacher" {
+		attestationData, err := apiCfg.DB.GetAttestationData(r.Context(), user.ID)
 
-// }
+		if err != nil {
+			respondWithError(w, 400, fmt.Sprintf("Couldn't get attestation data: %v", err))
+			return
+		}
+
+		respondWithJSON(w, 200, attestationData)
+		return
+	}
+	respondWithError(w, 403, "You are not allowed here")
+}
 
 // func stubAttestation(n int, index string) []*db.Attestation {
 // 	result := []*db.Attestation{}

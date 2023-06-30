@@ -7,7 +7,7 @@ package db
 
 import (
 	"context"
-
+	"database/sql"
 	"github.com/google/uuid"
 )
 
@@ -34,6 +34,66 @@ func (q *Queries) GetPreAttestationData(ctx context.Context) ([]GetPreAttestatio
 	for rows.Next() {
 		var i GetPreAttestationDataRow
 		if err := rows.Scan(&i.StudentID, &i.SemesterActivityID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAttestationData = `-- name: GetAttestationData :many
+SELECT a.id,
+    u.name student,
+    g.code,
+    c.name class,
+    a.result,
+    a.month,
+    a.comment
+FROM semester_activity sa,
+    attestation a,
+    users u,
+    groups g,
+    classes c
+WHERE sa.teacher_id = $1
+    and a.student_id = u.id
+    and g.id = sa.group_id
+    and c.id = sa.class_id
+`
+
+type GetAttestationDataRow struct {
+	ID      uuid.UUID `json:"id"`
+	Student string `json:"student"`
+	Code    string `json:"group"`
+	Class   string `json:"class"`
+	Result  sql.NullBool `json:"result"`
+	Month   MonthEnum `json:"month"`
+	Comment sql.NullString `json:"comment"`
+}
+
+func (q *Queries) GetAttestationData(ctx context.Context, teacherID uuid.UUID) ([]GetAttestationDataRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAttestationData, teacherID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAttestationDataRow
+	for rows.Next() {
+		var i GetAttestationDataRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Student,
+			&i.Code,
+			&i.Class,
+			&i.Result,
+			&i.Month,
+			&i.Comment,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
