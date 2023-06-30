@@ -19,3 +19,11 @@ type User struct {
 	Password  string
 	Role      string
 }
+
+type Group struct {
+	ID        uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Name      string
+	Code      string
+}

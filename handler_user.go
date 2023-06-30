@@ -44,5 +44,25 @@ func (apiCfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Reques
 }
 
 func (apiCfg *apiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request, user db.User) {
+	grps := stubGroups(5000, "a")
+	itemsBunkCreate(grps, "groups")
 	respondWithJSON(w, 200, struct{}{})
 }
+
+func stubGroups(n int, index string) []*Group {
+	result := []*Group{}
+	for i := 0; i < n; i++ {
+		result = append(result, &Group{
+			ID:        uuid.New(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			Name:      "test",
+			Code:      fmt.Sprintf("%v%s", i, index),
+		})
+	}
+	return result
+}
+
+// func createGroup(i int, index string) Group {
+// 	return
+// }

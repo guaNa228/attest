@@ -11,7 +11,6 @@ import (
 	"github.com/go-chi/cors"
 	db "github.com/guaNa228/attest/internal/database"
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
 )
 
 type apiConfig struct {
@@ -60,10 +59,18 @@ func main() {
 	v1Router := chi.NewRouter()
 
 	v1Router.Get("/healthz", handlerReadiness)
+
 	v1Router.Get("/err", handlerErr)
-	v1Router.Post("/users", apiCfg.middlewareAuth(apiCfg.handlerCreateUser, []string{}))
+
+	v1Router.Post("/user", apiCfg.middlewareAuth(apiCfg.handlerCreateUser, []string{}))
+
 	v1Router.Post("/login", apiCfg.handlerLogin)
+
 	v1Router.Get("/test", apiCfg.middlewareAuth(apiCfg.handlerGetUser, []string{"teacher", "student"}))
+
+	v1Router.Post("/group", apiCfg.middlewareAuth(apiCfg.handlerCreateGroup, []string{}))
+	v1Router.Delete("/group/{groupToDelete}", apiCfg.middlewareAuth(apiCfg.handlerDeleteGroup, []string{}))
+
 	router.Mount("/v1", v1Router)
 
 	srv := &http.Server{
