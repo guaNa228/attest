@@ -6,7 +6,7 @@ CREATE TABLE semester_activity (
     class_id UUID NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
     group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
     teacher_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE(class_id, group_id, teacher_id)
+    UNIQUE(class_id, group_id)
 );
 -- +goose Down 
 DROP TABLE semester_activity;

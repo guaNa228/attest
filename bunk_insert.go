@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	db "github.com/guaNa228/attest/internal/database"
 	"github.com/lib/pq"
 )
 
@@ -16,20 +17,23 @@ func fillTypeData(v interface{}) ([]interface{}, error) {
 	switch x := v.(type) {
 	case Group:
 		return []interface{}{x.ID, x.CreatedAt, x.UpdatedAt, x.Name, x.Code}, nil
+	case db.Attestation:
+		return []interface{}{x.ID, x.SemesterActivityID, x.StudentID, x.Month, nil}, nil
 	default:
 		return []interface{}{}, fmt.Errorf("unsupported type %t thrown for bunk creation", x)
 	}
 }
 
 var insertContextByTypes = map[string][]string{
-	"groups": {"id", "created_at", "updated_at", "name", "code"},
+	"groups":      {"id", "created_at", "updated_at", "name", "code"},
+	"attestation": {"id", "semester_activity_id", "student_id", "month", "result"},
 }
 
-func itemsBunkCreate[T any](items []*T, typeTitle string) {
+func itemsBunkCreate[T any](items []*T, typeTitle string) []error {
 	db, err := sql.Open("postgres", fmt.Sprintf("host=localhost port=5432 user=%v dbname=attest password=%v sslmode=disable", os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD")))
 	if err != nil {
 		fmt.Println(err)
-		return
+		return []error{err}
 	}
 	defer db.Close()
 	size := 500
@@ -105,16 +109,21 @@ func itemsBunkCreate[T any](items []*T, typeTitle string) {
 		close(errCh)
 	}()
 
+	errorSlice := []error{}
 	for err := range errCh {
 		if err != nil {
 			//здесь всегда возникает ошибка pq: повторяющееся значение ключа нарушает ограничение уникальности, экспериментально
 			//установлено, что все данные попадают в таблицу, поэтому эту ошибку принято решение не выводить
 			if !strings.Contains(err.Error(), "pkey") {
-				fmt.Println(err)
+				errorSlice = append(errorSlice, err)
 			}
-			return
 		}
 	}
+
+	if len(errorSlice) == 0 {
+		return nil
+	}
+	return errorSlice
 }
 
 func chunkItems[T any](items []*T, size int) [][]*T {

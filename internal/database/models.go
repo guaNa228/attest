@@ -5,10 +5,73 @@
 package db
 
 import (
+	"database/sql"
+	"database/sql/driver"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+type MonthEnum string
+
+const (
+	MonthEnumValue0  MonthEnum = "Январь"
+	MonthEnumValue1  MonthEnum = "Февраль"
+	MonthEnumValue2  MonthEnum = "Март"
+	MonthEnumValue3  MonthEnum = "Апрель"
+	MonthEnumValue4  MonthEnum = "Май"
+	MonthEnumValue5  MonthEnum = "Июнь"
+	MonthEnumValue6  MonthEnum = "Июль"
+	MonthEnumValue7  MonthEnum = "Август"
+	MonthEnumValue8  MonthEnum = "Сентябрь"
+	MonthEnumValue9  MonthEnum = "Октябрь"
+	MonthEnumValue10 MonthEnum = "Ноябрь"
+	MonthEnumValue11 MonthEnum = "Декабрь"
+)
+
+func (e *MonthEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = MonthEnum(s)
+	case string:
+		*e = MonthEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for MonthEnum: %T", src)
+	}
+	return nil
+}
+
+type NullMonthEnum struct {
+	MonthEnum MonthEnum
+	Valid     bool // Valid is true if MonthEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullMonthEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.MonthEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.MonthEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullMonthEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.MonthEnum), nil
+}
+
+type Attestation struct {
+	ID                 uuid.UUID
+	SemesterActivityID uuid.UUID
+	StudentID          uuid.UUID
+	Month              MonthEnum
+	Result             sql.NullBool
+}
 
 type User struct {
 	ID        uuid.UUID `json:"id"`
