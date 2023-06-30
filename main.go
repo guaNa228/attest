@@ -71,6 +71,9 @@ func main() {
 	v1Router.Post("/group", apiCfg.middlewareAuth(apiCfg.handlerCreateGroup, []string{}))
 	v1Router.Delete("/group/{groupToDelete}", apiCfg.middlewareAuth(apiCfg.handlerDeleteGroup, []string{}))
 
+	v1Router.Post("/class", apiCfg.middlewareAuth(apiCfg.handlerCreateClass, []string{}))
+	v1Router.Delete("/class/{classToDeleteID}", apiCfg.middlewareAuth(apiCfg.handlerDeleteClass, []string{}))
+
 	router.Mount("/v1", v1Router)
 
 	srv := &http.Server{

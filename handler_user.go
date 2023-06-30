@@ -62,7 +62,3 @@ func stubGroups(n int, index string) []*Group {
 	}
 	return result
 }
-
-// func createGroup(i int, index string) Group {
-// 	return
-// }

@@ -14,9 +14,9 @@ VALUES (
         $5
     )
 RETURNING *;
--- name: DeleteGroupByID :one
+-- name: DeleteGroupByID :exec
 DELETE FROM groups
 WHERE id = $1;
--- name: DeleteGroupByCode :one
+-- name: DeleteGroupByCode :exec
 DELETE FROM groups
 WHERE code = $1;

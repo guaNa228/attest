@@ -27,3 +27,8 @@ type Group struct {
 	Name      string
 	Code      string
 }
+
+type Class struct {
+	ID   uuid.UUID
+	Name string
+}
