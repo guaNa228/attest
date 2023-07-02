@@ -8,7 +8,7 @@ package db
 import (
 	"context"
 	"time"
-
+	"database/sql"
 	"github.com/google/uuid"
 )
 
@@ -21,7 +21,8 @@ INSERT INTO users(
         login,
         password,
         role,
-        group_id
+        group_id,
+        teacher_id
     )
 VALUES (
         $1,
@@ -31,9 +32,10 @@ VALUES (
         $5,
         $6,
         $7,
-        $8
+        $8,
+  		$9
     )
-RETURNING id, created_at, updated_at, name, login, password, role, group_id
+RETURNING id, created_at, updated_at, name, login, password, role, teacher_id, group_id
 `
 
 type CreateUserParams struct {
@@ -45,6 +47,7 @@ type CreateUserParams struct {
 	Password  string
 	Role      string
 	GroupID   uuid.NullUUID
+	TeacherID sql.NullInt32
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -57,6 +60,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Password,
 		arg.Role,
 		arg.GroupID,
+		arg.TeacherID,
 	)
 	var i User
 	err := row.Scan(
@@ -67,6 +71,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Login,
 		&i.Password,
 		&i.Role,
+		&i.TeacherID,
 		&i.GroupID,
 	)
 	return i, err
@@ -150,4 +155,32 @@ func (q *Queries) UpdateStudentsGroup(ctx context.Context, arg UpdateStudentsGro
 		&i.GroupID,
 	)
 	return i, err
+}
+
+const ifLoginDuplicates = `-- name: IfLoginDuplicates :one
+select exists(
+        select 1
+        from users
+        where login ~ $1
+    )
+`
+
+func (q *Queries) IfLoginDuplicates(ctx context.Context, login string) (bool, error) {
+	row := q.db.QueryRowContext(ctx, ifLoginDuplicates, login)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const numberOfDuplicatedUsers = `-- name: NumberOfDuplicatedUsers :one
+select COUNT(*)
+from users
+where login ~ $1
+`
+
+func (q *Queries) NumberOfDuplicatedUsers(ctx context.Context, login string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, numberOfDuplicatedUsers, login)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }

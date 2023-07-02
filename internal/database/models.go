@@ -82,6 +82,7 @@ type User struct {
 	Login     string `json:"login"`
 	Password  string `json:"-"`
 	Role      string `json:"role"`
+	TeacherID sql.NullInt32 `json:"teacher_id"`
 	GroupID   uuid.NullUUID `json:"group_id"`
 }
 

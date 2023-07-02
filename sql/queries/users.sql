@@ -7,7 +7,8 @@ INSERT INTO users(
         login,
         password,
         role,
-        group_id
+        group_id,
+        teacher_id
     )
 VALUES (
         $1,
@@ -17,7 +18,8 @@ VALUES (
         $5,
         $6,
         $7,
-        $8
+        $8,
+        $9
     )
 RETURNING *;
 -- name: GetUserByCredentials :one
@@ -36,3 +38,13 @@ SET group_id = $2,
 WHERE id = $1
     and role = "student"
 RETURNING *;
+-- name: IfLoginDuplicates :one
+select exists(
+        select 1
+        from users
+        where login ~ $1
+    );
+-- name: NumberOfDuplicatedUsers :one
+select COUNT(*)
+from users
+where login ~ $1;

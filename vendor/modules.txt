@@ -55,6 +55,9 @@ github.com/lib/pq/scram
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
+# github.com/sethvargo/go-password v0.2.0
+## explicit; go 1.14
+github.com/sethvargo/go-password/password
 # golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 ## explicit; go 1.11
 golang.org/x/crypto/curve25519

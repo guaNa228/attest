@@ -18,7 +18,6 @@ type apiConfig struct {
 }
 
 func main() {
-
 	godotenv.Load(".env")
 
 	port := os.Getenv("PORT")
@@ -79,6 +78,8 @@ func main() {
 	v1Router.Delete("/semesterActivity/{semesterActivityToDeleteID}", apiCfg.middlewareAuth(apiCfg.handlerDeleteSemesterActivity, []string{}))
 
 	v1Router.Post("/attestation", apiCfg.middlewareAuth(apiCfg.handleAttestationSpawn, []string{}))
+
+	v1Router.Post("/teacher", apiCfg.middlewareAuth(apiCfg.handlerCreateTeacher, []string{}))
 
 	v1Router.Get("/", apiCfg.middlewareAuth(apiCfg.handleAttestationGet, []string{"teacher"}))
 

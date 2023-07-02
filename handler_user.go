@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -43,6 +44,55 @@ func (apiCfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Reques
 	}
 
 	respondWithJSON(w, 201, userToCreate)
+}
+
+func (apiCfg *apiConfig) handlerCreateTeacher(w http.ResponseWriter, r *http.Request, user db.User) {
+	type parameters struct {
+		Name      string `json:"name"`
+		TeacherID *int32 `json:"teacher_id,omitempty"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		respondWithError(w, 400, fmt.Sprintf("Error parsing JSON: %v", err))
+		return
+	}
+	//Добавить сравнение по teacher_id
+	generatedCredentials, err := apiCfg.credentialsByName(params.Name)
+	if err != nil {
+		respondWithError(w, 400, err.Error())
+		return
+	}
+
+	teacherId := sql.NullInt32{}
+	if params.TeacherID != nil {
+		teacherId = sql.NullInt32{Valid: true, Int32: *params.TeacherID}
+	} else {
+		teacherId = sql.NullInt32{Valid: false, Int32: 0}
+	}
+
+	fmt.Println(teacherId)
+
+	userToCreate, err := apiCfg.DB.CreateUser(r.Context(), db.CreateUserParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+		Name:      params.Name,
+		Login:     generatedCredentials.login,
+		Password:  generatedCredentials.password,
+		Role:      "teacher",
+		GroupID:   uuid.NullUUID{},
+		TeacherID: teacherId,
+	})
+
+	if err != nil {
+		respondWithError(w, 400, fmt.Sprintf("Couldn't create teacher: %v", err))
+		return
+	}
+
+	respondWithJSON(w, 200, userToCreate)
 }
 
 func (apiCfg *apiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request, user db.User) {
