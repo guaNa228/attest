@@ -17,25 +17,28 @@ INSERT INTO groups(
         id,
         created_at,
         updated_at,
-        name,
-        code
+        subcode,
+  		stream,
+  		course
     )
 VALUES (
         $1,
         $2,
         $3,
         $4,
-        $5
+        $5,
+  		$6
     )
-RETURNING id, created_at, updated_at, name, code
+RETURNING id, created_at, updated_at, subcode, stream, course
 `
 
 type CreateGroupParams struct {
 	ID        uuid.UUID
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	Name      string
-	Code      string
+	Subcode   string
+	Stream    uuid.UUID
+	Course    int16
 }
 
 func (q *Queries) CreateGroup(ctx context.Context, arg CreateGroupParams) (Group, error) {
@@ -43,19 +46,22 @@ func (q *Queries) CreateGroup(ctx context.Context, arg CreateGroupParams) (Group
 		arg.ID,
 		arg.CreatedAt,
 		arg.UpdatedAt,
-		arg.Name,
-		arg.Code,
+		arg.Subcode,
+		arg.Stream,
+		arg.Course,
 	)
 	var i Group
 	err := row.Scan(
 		&i.ID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Name,
-		&i.Code,
+		&i.Subcode,
+		&i.Stream,
+		&i.Course,
 	)
 	return i, err
 }
+
 
 const deleteGroupByCode = `-- name: DeleteGroupByCode :exec
 DELETE FROM groups

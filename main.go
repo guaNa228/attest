@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
 	db "github.com/guaNa228/attest/internal/database"
+	"github.com/guaNa228/attest/parsing"
 	"github.com/joho/godotenv"
 )
 
@@ -41,6 +42,14 @@ func main() {
 	}
 
 	fmt.Println("Succesfully connected to database")
+
+	err = apiCfg.createPrograms()
+
+	if err != nil {
+		fmt.Println("Error during programs initialization:", err)
+	} else {
+		fmt.Println("Programs are succesfully intialized!")
+	}
 
 	router := chi.NewRouter()
 
@@ -81,9 +90,16 @@ func main() {
 
 	v1Router.Post("/teacher", apiCfg.middlewareAuth(apiCfg.handlerCreateTeacher, []string{}))
 
+	v1Router.Post("/student", apiCfg.middlewareAuth(apiCfg.handlerCreateStudent, []string{}))
+
 	v1Router.Get("/", apiCfg.middlewareAuth(apiCfg.handleAttestationGet, []string{"teacher"}))
 
 	router.Mount("/v1", v1Router)
+
+	logChan := make(chan string)
+	errorChan := make(chan error)
+	parsingResult := parsing.StartParsing(logChan, errorChan, "2023-03-01")
+	parsing.PrintParsingResult(parsingResult)
 
 	srv := &http.Server{
 		Handler: router,

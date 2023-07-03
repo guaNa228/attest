@@ -4,7 +4,9 @@ CREATE TABLE workload(
     group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
     class UUID NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
     teacher UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE(group_id, class)
+    UNIQUE(group_id, class) --Убрать нахуй, так как у одной группы по одному предмету может быть несколько преподавателей,
+    --которые должны иметь возможность проставлять аттестацию
+    --ПОДУМОЙ
 );
 -- +goose StatementBegin
 CREATE FUNCTION validate_teacher_role() RETURNS trigger LANGUAGE 'plpgsql' NOT LEAKPROOF AS $BODY$ BEGIN IF NOT EXISTS (

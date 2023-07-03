@@ -74,6 +74,12 @@ type Attestation struct {
 	Comment            sql.NullString
 }
 
+type Program struct {
+	ID         uuid.UUID `json:"id"`
+	Name       string `json:"name"`
+	MaxCourses int16 `json:"max_courses"`
+}
+
 type User struct {
 	ID        uuid.UUID `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
@@ -87,18 +93,30 @@ type User struct {
 }
 
 type Group struct {
-	ID        uuid.UUID
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Name      string
-	Code      string
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time	`json:"updated_at"`
+	Subcode   string `json:"subcode"`
+	Stream    uuid.UUID `json:"stream"`
+	Course    int16 `json:"course"`
 }
 
+type Stream struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Name      string `json:"name"`
+	Code      string `json:"code"`
+	Program   uuid.UUID `json:"program"`
+}
+
+//Old 
 type Class struct {
 	ID   uuid.UUID `json:"id"`
 	Name string `json:"name"`
 }
 
+//Old 
 type SemesterActivity struct {
 	ID        uuid.UUID `json:"id"`
 	CreatedAt time.Time `json:"created_at"`

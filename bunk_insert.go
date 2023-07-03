@@ -15,8 +15,8 @@ import (
 
 func fillTypeData(v interface{}) ([]interface{}, error) {
 	switch x := v.(type) {
-	case Group:
-		return []interface{}{x.ID, x.CreatedAt, x.UpdatedAt, x.Name, x.Code}, nil
+	case db.Group:
+		return []interface{}{x.ID, x.CreatedAt, x.UpdatedAt, x.Subcode, x.Stream, x.Course}, nil
 	case db.Attestation:
 		return []interface{}{x.ID, x.SemesterActivityID, x.StudentID, x.Month, nil, nil}, nil
 	default:
@@ -25,7 +25,7 @@ func fillTypeData(v interface{}) ([]interface{}, error) {
 }
 
 var insertContextByTypes = map[string][]string{
-	"groups":      {"id", "created_at", "updated_at", "name", "code"},
+	"groups":      {"id", "created_at", "updated_at", "subcode", "stream", "course"},
 	"attestation": {"id", "semester_activity_id", "student_id", "month", "result", "comment"},
 }
 

@@ -3,15 +3,17 @@ INSERT INTO groups(
         id,
         created_at,
         updated_at,
-        name,
-        code
+        subcode,
+        stream,
+        course,
     )
 VALUES (
         $1,
         $2,
         $3,
         $4,
-        $5
+        $5,
+        $6
     )
 RETURNING *;
 -- name: DeleteGroupByID :exec

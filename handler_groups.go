@@ -13,8 +13,9 @@ import (
 
 func (apiCfg *apiConfig) handlerCreateGroup(w http.ResponseWriter, r *http.Request, user db.User) {
 	type parameters struct {
-		Name string `json:"name"`
-		Code string `json:"code"`
+		Stream  uuid.UUID `json:"stream"`
+		Subcode string    `json:"code"`
+		Course  int16     `json:"course"`
 	}
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
@@ -28,8 +29,9 @@ func (apiCfg *apiConfig) handlerCreateGroup(w http.ResponseWriter, r *http.Reque
 		ID:        uuid.New(),
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
-		Name:      params.Name,
-		Code:      params.Code,
+		Stream:    params.Stream,
+		Subcode:   params.Subcode,
+		Course:    params.Course,
 	})
 
 	if err != nil {
@@ -37,7 +39,7 @@ func (apiCfg *apiConfig) handlerCreateGroup(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	respondWithJSON(w, 201, databaseGroupToGroup(groupToCreate))
+	respondWithJSON(w, 201, groupToCreate)
 }
 
 func (apiCfg *apiConfig) handlerDeleteGroup(w http.ResponseWriter, r *http.Request, user db.User) {
