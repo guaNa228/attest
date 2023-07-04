@@ -5,3 +5,7 @@ RETURNING *;
 -- name: GetProgramsNumber :one
 SELECT COUNT(*)
 FROM programs;
+-- name: GetProgramsIdByName :one
+SELECT id
+FROM programs
+WHERE name = $1;

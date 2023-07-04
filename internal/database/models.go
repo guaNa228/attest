@@ -110,10 +110,18 @@ type Stream struct {
 	Program   uuid.UUID `json:"program"`
 }
 
-//Old 
 type Class struct {
-	ID   uuid.UUID `json:"id"`
-	Name string `json:"name"`
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"name"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Name      string `json:"created_at"`
+}
+
+type Workload struct {
+	ID      uuid.UUID `json:"id"`
+	GroupID uuid.UUID `json:"group_id"`
+	Class   uuid.UUID `json:"class_id"`
+	Teacher uuid.UUID `json:"teacher_id"`
 }
 
 //Old 

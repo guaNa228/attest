@@ -184,3 +184,21 @@ func (q *Queries) NumberOfDuplicatedUsers(ctx context.Context, login string) (in
 	err := row.Scan(&count)
 	return count, err
 }
+
+const getTeacherIDByNameAndTeacherId = `-- name: GetTeacherIDByNameAndTeacherId :one
+select id
+from users
+where name=$1 and teacher_id=$2
+`
+
+type GetTeacherIDByNameAndTeacherIdParams struct {
+	Name      string
+	TeacherID sql.NullInt32
+}
+
+func (q *Queries) GetTeacherIDByNameAndTeacherId(ctx context.Context, arg GetTeacherIDByNameAndTeacherIdParams) (uuid.UUID, error) {
+	row := q.db.QueryRowContext(ctx, getTeacherIDByNameAndTeacherId, arg.Name, arg.TeacherID)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}

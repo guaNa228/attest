@@ -50,17 +50,61 @@ func getNumberAfterSecondSlash(s string) (int32, error) {
 
 func PrintParsingResult(parsingResult []*FacultyParsed) {
 	for _, faculty := range parsingResult {
+		log.Println(faculty.Name)
 		for _, course := range (*faculty).Courses {
-			log.Println(course.Number)
+			log.Println(" ", course.Number)
 			for _, group := range (*course).Groups {
-				log.Println(" ", group.FullCode)
+				log.Println("  ", group.FullCode)
 				for _, class := range (*group).Classes {
-					log.Println("  ", class.Name)
+					log.Println("   ", class.Name)
 					for _, teacher := range (*class).Teachers {
-						log.Println("   ", teacher.Name, "/", teacher.Id)
+						log.Println("    ", teacher.Name, "/", teacher.Id)
 					}
 				}
 			}
 		}
 	}
+}
+
+func logParsingResult(parsingResult *[]*FacultyParsed, logChannel *chan string) {
+	*logChannel <- fmt.Sprintf("Found %v faculties:", len(*parsingResult))
+	for _, faculty := range *parsingResult {
+		*logChannel <- fmt.Sprintf(" Found %v courses on faculty %s:", len(faculty.Courses), faculty.Name)
+		for _, course := range (*faculty).Courses {
+			*logChannel <- fmt.Sprintf("  On course %v found %v groups", course.Number, len(course.Groups))
+			for _, group := range (*course).Groups {
+				*logChannel <- fmt.Sprintf("   In group %s found %v classes:", group.FullCode, len(group.Classes))
+				for _, class := range (*group).Classes {
+					for _, teacher := range (*class).Teachers {
+						*logChannel <- fmt.Sprintf("    Class %s is taught by %s(%v):", class.Name, teacher.Name, teacher.Id)
+					}
+				}
+			}
+		}
+	}
+}
+
+func safeString(str string) string {
+	str = reduceConsecutiveSpaces(str)
+	return strings.Trim(str, " ")
+}
+
+func reduceConsecutiveSpaces(str string) string {
+	var builder strings.Builder
+	prevSpace := true
+
+	for _, char := range str {
+		if char == ' ' {
+			if prevSpace {
+				continue
+			}
+			prevSpace = true
+		} else {
+			prevSpace = false
+		}
+
+		builder.WriteRune(char)
+	}
+
+	return builder.String()
 }

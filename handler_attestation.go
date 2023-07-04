@@ -1,57 +1,54 @@
 package main
 
 import (
-	"context"
-	"database/sql"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
-	"github.com/google/uuid"
 	db "github.com/guaNa228/attest/internal/database"
 )
 
-func (apiCfg *apiConfig) handleAttestationSpawn(w http.ResponseWriter, r *http.Request, user db.User) {
-	type parameters struct {
-		MonthEnum string `json:"month"`
-	}
-	decoder := json.NewDecoder(r.Body)
-	params := parameters{}
-	err := decoder.Decode(&params)
-	if err != nil {
-		respondWithError(w, 400, fmt.Sprintf("Error parsing JSON: %v", err))
-		return
-	}
+// Attestation spawn !!!!!!!!!!NEEDED!!!!!!!!!!
+// func (apiCfg *apiConfig) handleAttestationSpawn(w http.ResponseWriter, r *http.Request, user db.User) {
+// 	type parameters struct {
+// 		MonthEnum string `json:"month"`
+// 	}
+// 	decoder := json.NewDecoder(r.Body)
+// 	params := parameters{}
+// 	err := decoder.Decode(&params)
+// 	if err != nil {
+// 		respondWithError(w, 400, fmt.Sprintf("Error parsing JSON: %v", err))
+// 		return
+// 	}
 
-	preAttestationData, err := apiCfg.DB.GetPreAttestationData(context.Background())
-	fmt.Println(len(preAttestationData))
-	if err != nil {
-		respondWithError(w, 400, fmt.Sprintf("Database is corrupted: %v", err))
-	}
+// 	preAttestationData, err := apiCfg.DB.GetPreAttestationData(context.Background())
+// 	fmt.Println(len(preAttestationData))
+// 	if err != nil {
+// 		respondWithError(w, 400, fmt.Sprintf("Database is corrupted: %v", err))
+// 	}
 
-	attestationData := []*db.Attestation{}
+// 	attestationData := []*db.Attestation{}
 
-	for _, preAttestationItem := range preAttestationData {
-		attestationData = append(attestationData, &db.Attestation{
-			ID:                 uuid.New(),
-			StudentID:          preAttestationItem.StudentID,
-			SemesterActivityID: preAttestationItem.SemesterActivityID,
-			Month:              db.MonthEnum(params.MonthEnum),
-			Result:             sql.NullBool{Valid: false},
-			Comment:            sql.NullString{Valid: false},
-		})
-	}
-	fmt.Println(len(attestationData))
-	errorList := itemsBunkCreate(attestationData, "attestation")
-	if errorList != nil {
-		for _, err := range errorList {
-			fmt.Println(err)
-		}
-		respondWithJSON(w, 500, "Unable to spawn attestation due to server problems")
-	}
+// 	for _, preAttestationItem := range preAttestationData {
+// 		attestationData = append(attestationData, &db.Attestation{
+// 			ID:                 uuid.New(),
+// 			StudentID:          preAttestationItem.StudentID,
+// 			SemesterActivityID: preAttestationItem.SemesterActivityID,
+// 			Month:              db.MonthEnum(params.MonthEnum),
+// 			Result:             sql.NullBool{Valid: false},
+// 			Comment:            sql.NullString{Valid: false},
+// 		})
+// 	}
+// 	fmt.Println(len(attestationData))
+// 	errorList := itemsBunkCreate(attestationData, "attestation")
+// 	if errorList != nil {
+// 		for _, err := range errorList {
+// 			fmt.Println(err)
+// 		}
+// 		respondWithJSON(w, 500, "Unable to spawn attestation due to server problems")
+// 	}
 
-	respondWithJSON(w, 200, struct{}{})
-}
+// 	respondWithJSON(w, 200, struct{}{})
+// }
 
 func (apiCfg *apiConfig) handleAttestationGet(w http.ResponseWriter, r *http.Request, user db.User) {
 	if user.Role == "teacher" {

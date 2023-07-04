@@ -10,8 +10,8 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
 	db "github.com/guaNa228/attest/internal/database"
-	"github.com/guaNa228/attest/parsing"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 type apiConfig struct {
@@ -51,6 +51,8 @@ func main() {
 		fmt.Println("Programs are succesfully intialized!")
 	}
 
+	go apiCfg.parsingResult()
+
 	router := chi.NewRouter()
 
 	router.Use(cors.Handler(
@@ -86,7 +88,7 @@ func main() {
 	v1Router.Post("/semesterActivity/{semesterActivityToUpdateID}", apiCfg.middlewareAuth(apiCfg.handlerUpdateSemesterActivity, []string{}))
 	v1Router.Delete("/semesterActivity/{semesterActivityToDeleteID}", apiCfg.middlewareAuth(apiCfg.handlerDeleteSemesterActivity, []string{}))
 
-	v1Router.Post("/attestation", apiCfg.middlewareAuth(apiCfg.handleAttestationSpawn, []string{}))
+	//v1Router.Post("/attestation", apiCfg.middlewareAuth(apiCfg.handleAttestationSpawn, []string{}))
 
 	v1Router.Post("/teacher", apiCfg.middlewareAuth(apiCfg.handlerCreateTeacher, []string{}))
 
@@ -95,11 +97,6 @@ func main() {
 	v1Router.Get("/", apiCfg.middlewareAuth(apiCfg.handleAttestationGet, []string{"teacher"}))
 
 	router.Mount("/v1", v1Router)
-
-	logChan := make(chan string)
-	errorChan := make(chan error)
-	parsingResult := parsing.StartParsing(logChan, errorChan, "2023-03-01")
-	parsing.PrintParsingResult(parsingResult)
 
 	srv := &http.Server{
 		Handler: router,

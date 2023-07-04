@@ -6,18 +6,17 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/guaNa228/attest/logger"
 )
 
 // const value of classes, that we don't wan't to add
 var bannedClasses []string = []string{"Элективная физическая культура и спорт", "Иностранный язык: Русский язык как иностранный", "Модуль саморазвития (SoftSkills)"}
-var classTypesToParse []string = []string{"Практика", "Лабораторные"}
+var classTypesToParse []string = []string{"Практика"}
 
 type FacultyParsed struct {
-	// can be used in prod version
-	// name string
+	Name    string
 	Courses []*CourseParsed
 }
 
@@ -41,11 +40,7 @@ type ParsedTeacher struct {
 	Id   int32
 }
 
-func StartParsing(logChan chan string, errorChan chan error, dateToParse string) []*FacultyParsed {
-
-	go logger.Logger(logChan)
-
-	go logger.ErrLogger(errorChan)
+func StartParsing(logChan *chan string, errorChan *chan error, dateToParse string) *[]*FacultyParsed {
 
 	var facultiesWg sync.WaitGroup
 	facultyChannel := make(chan *FacultyParsed)
@@ -53,7 +48,7 @@ func StartParsing(logChan chan string, errorChan chan error, dateToParse string)
 	go parsedFacultiesChannelRead(&facultiesToReturn, facultyChannel)
 
 	facultiesWg.Add(1)
-	go ParseFaculty("https://ruz.spbstu.ru/faculty/95/groups", &logChan, &errorChan, &facultiesWg, facultyChannel, dateToParse)
+	go ParseFaculty("https://ruz.spbstu.ru/faculty/95/groups", logChan, errorChan, &facultiesWg, facultyChannel, dateToParse)
 
 	facultiesWg.Wait()
 
@@ -66,25 +61,11 @@ func StartParsing(logChan chan string, errorChan chan error, dateToParse string)
 
 	facultyChannelWG.Wait()
 
-	logWG := sync.WaitGroup{}
-	logWG.Add(1)
-	go func() {
-		defer logWG.Done()
-		close(logChan)
-	}()
+	time.Sleep(time.Second * 2)
+	logParsingResult(&facultiesToReturn, logChan)
+	*logChan <- fmt.Sprintln("Parsing finished")
 
-	errorWG := sync.WaitGroup{}
-	errorWG.Add(1)
-	go func() {
-		defer errorWG.Done()
-		close(errorChan)
-	}()
-
-	logWG.Wait()
-	errorWG.Wait()
-
-	fmt.Println("Parsing finished")
-	return facultiesToReturn
+	return &facultiesToReturn
 }
 
 func ParseFaculty(url string, parsingLogsChannel *chan string, parsingErrorsChannel *chan error, facultiesWg *sync.WaitGroup, dataChannel chan *FacultyParsed, dateToParse string) {
@@ -114,7 +95,9 @@ func ParseFaculty(url string, parsingLogsChannel *chan string, parsingErrorsChan
 	facultyItem := doc.Find(".breadcrumb-item.active").Text()
 	*parsingLogsChannel <- fmt.Sprintf("Starting to parse faculty %s", facultyItem)
 
-	facultyToReturn := FacultyParsed{}
+	facultyToReturn := FacultyParsed{
+		Name: facultyItem,
+	}
 	coursesWg := sync.WaitGroup{}
 	coursesChannel := make(chan *CourseParsed)
 
@@ -159,12 +142,6 @@ func ParseCourse(courseNumber int16, element *goquery.Selection, parsingLogsChan
 
 	go parsedGroupsChannelRead(&courseToReturn, groupsChannel)
 	element.Find(".groups-list__item").Each(func(index int, element *goquery.Selection) {
-		// elementClass, exists := element.Attr("class")
-		// if exists {
-		// 	log.Println(elementClass)
-		// } else {
-		// 	log.Println("class not found")
-		// }
 		linkToGroup, exists := element.Children().First().Attr("href")
 		if !exists {
 			*parsingErrorsChannel <- errors.New("didn't find group link, maybe template changed")
@@ -206,7 +183,7 @@ func ParseGroup(link string, parsingLogsChannel *chan string, parsingErrorsChann
 	}
 
 	defer groupsWg.Done()
-	groupCode := doc.Find(".breadcrumb-item.active").Children().Eq(1).Text()
+	groupCode := safeString(doc.Find(".breadcrumb-item.active").Children().Eq(1).Text())
 
 	if groupCode == "" {
 		*parsingErrorsChannel <- errors.New("didn't find group code, maybe template changed")
@@ -249,12 +226,12 @@ func parseGroupWeek(urlBase string, dateToParse string, classses *[]*Class, pars
 
 	doc.Find(".lesson").Each(func(index int, element *goquery.Selection) {
 		lessonParams := element.Find(".lesson__params")
-		classType := lessonParams.Find(".lesson__type").Text()
+		classType := safeString(lessonParams.Find(".lesson__type").Text())
 		if !Contains(classTypesToParse, classType) {
 			return
 		}
 
-		className := element.Find(".lesson__subject").Children().Eq(2).Text()
+		className := safeString(element.Find(".lesson__subject").Children().Eq(2).Text())
 		if Contains(bannedClasses, className) {
 			return
 		}
@@ -264,7 +241,7 @@ func parseGroupWeek(urlBase string, dateToParse string, classses *[]*Class, pars
 		}
 
 		teacherParamsLink := lessonParams.Find(".lesson__teachers").Find(".lesson__link")
-		teacherName := teacherParamsLink.Children().Eq(2).Text()
+		teacherName := safeString(teacherParamsLink.Children().Eq(2).Text())
 		if teacherName == "" {
 			return
 		}

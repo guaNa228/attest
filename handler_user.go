@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -57,8 +58,17 @@ type Credentials struct {
 
 func (apiCfg *apiConfig) credentialsByName(fullName string) (Credentials, error) {
 	splittedName := strings.Split(translit.ToLatin(strings.ToLower(fullName)), " ")
-	surname, name, fathername := splittedName[0], splittedName[1], splittedName[2]
-	login := fmt.Sprintf("%s.%v%v", surname, string(name[0]), string(fathername[0]))
+	log.Println(fullName)
+	log.Println(len(fullName))
+	log.Println(splittedName)
+	var login string
+	for index, name := range splittedName {
+		if index == 0 {
+			login += name + "."
+			continue
+		}
+		login += string(name[0])
+	}
 
 	password, err := password.Generate(7, 2, 0, false, true)
 	if err != nil {
@@ -155,8 +165,8 @@ func (apiCfg *apiConfig) handlerCreateStudent(w http.ResponseWriter, r *http.Req
 
 	userToCreate, err := apiCfg.DB.CreateUser(r.Context(), db.CreateUserParams{
 		ID:        uuid.New(),
-		CreatedAt: time.Now().UTC(),
-		UpdatedAt: time.Now().UTC(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 		Name:      params.Name,
 		Login:     generatedCredentials.login,
 		Password:  generatedCredentials.password,

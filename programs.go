@@ -10,7 +10,7 @@ import (
 
 func (apiCfg *apiConfig) createPrograms() error {
 	programsFullTime := map[string]int16{
-		"Баклавриат":   4,
+		"Бакалавриат":  4,
 		"Магистратура": 2,
 		"Специалитет":  5,
 	}

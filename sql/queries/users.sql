@@ -48,3 +48,8 @@ select exists(
 select COUNT(*)
 from users
 where login ~ $1;
+-- name: GetTeacherIDByNameAndTeacherId :one
+select id
+from users
+where name = $1
+    and teacher_id = $2;

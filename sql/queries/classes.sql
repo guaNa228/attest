@@ -5,3 +5,5 @@ RETURNING *;
 -- name: DeleteClassByID :exec
 DELETE FROM classes
 WHERE id = $1;
+-- name: ClearClassesTable :exec
+DELETE from classes;

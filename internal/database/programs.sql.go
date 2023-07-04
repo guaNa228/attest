@@ -45,3 +45,17 @@ func (q *Queries) GetProgramsNumber(ctx context.Context) (int64, error) {
 	err := row.Scan(&count)
 	return count, err
 }
+
+const getProgramsIdByName = `-- name: GetProgramsIdByName :one
+SELECT id
+FROM programs
+WHERE name=$1
+`
+
+func (q *Queries) GetProgramsIdByName(ctx context.Context, name string) (uuid.UUID, error) {
+	row := q.db.QueryRowContext(ctx, getProgramsIdByName, name)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+

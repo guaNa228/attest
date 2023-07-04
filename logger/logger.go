@@ -9,9 +9,9 @@ func Logger(logChan chan string) {
 	}
 }
 
-func ErrLogger(logChan chan error) {
+func ErrLogger(logChan chan error, errorCounter *int) {
 	for err := range logChan {
-		// Print the log message
+		*errorCounter++
 		fmt.Println("error while parsing: ", err.Error())
 	}
 }

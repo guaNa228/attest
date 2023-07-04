@@ -38,3 +38,12 @@ func (q *Queries) DeleteClassByID(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, deleteClassByID, id)
 	return err
 }
+
+const clearClassesTable = `-- name: ClearClassesTable :exec
+DELETE from classes
+`
+
+func (q *Queries) ClearClassesTable(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, clearClassesTable)
+	return err
+}

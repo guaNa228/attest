@@ -15,7 +15,7 @@ CREATE TYPE month_enum AS ENUM (
 );
 CREATE TABLE attestation (
     id UUID PRIMARY KEY,
-    workload UUID NOT NULL REFERENCES workload(id) ON DELETE CASCADE,
+    workload UUID NOT NULL REFERENCES workloads(id) ON DELETE CASCADE,
     student UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     month month_enum NOT NULL,
     result BOOL,
