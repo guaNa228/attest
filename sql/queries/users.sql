@@ -53,3 +53,29 @@ select id
 from users
 where name = $1
     and teacher_id = $2;
+-- name: GetUserByEmail :one
+select id
+from users
+where email = $1;
+-- name: DeleteSemesterUsers :exec
+DELETE from users
+WHERE email is null
+    and role = 'student';
+-- name: RemoveGroupID :exec
+UPDATE users
+SET group_id = NULL
+WHERE group_id IS NOT NULL
+    and role = 'student';
+-- name: GetTeachersWithUniqueName :many
+SELECT id,
+    name
+FROM users
+WHERE role = 'teacher'
+    AND name IN (
+        SELECT name
+        FROM users
+        WHERE role = 'teacher'
+        GROUP BY name
+        HAVING COUNT(*) = 1
+    )
+    and email is null;

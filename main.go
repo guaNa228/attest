@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
 	db "github.com/guaNa228/attest/internal/database"
+	"github.com/guaNa228/attest/translit"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -51,7 +52,9 @@ func main() {
 		fmt.Println("Programs are succesfully intialized!")
 	}
 
-	go apiCfg.parsingResult()
+	//go apiCfg.parsingResult()
+
+	fmt.Println(translit.ToLatin("Вишневская Татьяна Александровна", translit.RussianEmail))
 
 	router := chi.NewRouter()
 
@@ -93,6 +96,8 @@ func main() {
 	v1Router.Post("/teacher", apiCfg.middlewareAuth(apiCfg.handlerCreateTeacher, []string{}))
 
 	v1Router.Post("/student", apiCfg.middlewareAuth(apiCfg.handlerCreateStudent, []string{}))
+
+	v1Router.Post("/students", apiCfg.middlewareAuth(apiCfg.uploadStudentsUpload, []string{}))
 
 	v1Router.Get("/", apiCfg.middlewareAuth(apiCfg.handleAttestationGet, []string{"teacher"}))
 

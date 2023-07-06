@@ -22,3 +22,10 @@ WHERE id = $1;
 -- name: DeleteGroupByCode :exec
 DELETE FROM groups
 WHERE code = $1;
+-- name: GetGroupByFullCode :one
+SELECT g.id
+FROM groups g,
+    streams s
+WHERE g.stream = s.id
+    and s.code = $1
+    and g.subcode = $2

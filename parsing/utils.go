@@ -1,11 +1,17 @@
 package parsing
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"net/mail"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/chromedp/chromedp"
 )
 
 func addWeekToDate(dateStr string) string {
@@ -25,7 +31,7 @@ func addWeekToDate(dateStr string) string {
 	return newDateStr
 }
 
-func Contains(slice []string, item string) bool {
+func Contains[T comparable](slice []T, item T) bool {
 	for _, value := range slice {
 		if value == item {
 			return true
@@ -107,4 +113,61 @@ func reduceConsecutiveSpaces(str string) string {
 	}
 
 	return builder.String()
+}
+
+func ChunkItems[T any](items []*T, size int) [][]*T {
+	chunkList := make([][]*T, 0)
+	chunk := make([]*T, 0, size)
+
+	for _, item := range items {
+		chunk = append(chunk, item)
+		if len(chunk) == size {
+			chunkList = append(chunkList, chunk)
+			chunk = make([]*T, 0, size)
+		}
+	}
+
+	if len(chunk) > 0 {
+		chunkList = append(chunkList, chunk)
+	}
+
+	return chunkList
+}
+
+func isValidEmail(email string) bool {
+	_, err := mail.ParseAddress(email)
+	return err == nil
+}
+
+func waitForPageLoad(url string) (*goquery.Document, error) {
+	// Create a new context
+	ctx, cancel := chromedp.NewContext(context.Background())
+
+	// Use a WaitGroup to wait for the page to fully load
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	// Variables to store the HTML content
+	var htmlContent string
+
+	// Run the task to navigate to the URL and wait for a visible element
+	err := chromedp.Run(ctx,
+		chromedp.Navigate(url),
+		chromedp.WaitVisible("body", chromedp.ByQuery),
+		chromedp.OuterHTML("html", &htmlContent),
+	)
+	if err != nil {
+		cancel()
+		return nil, err
+	}
+
+	// Load the HTML content into a goquery.Document
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(htmlContent))
+	if err != nil {
+		cancel()
+		return nil, err
+	}
+
+	cancel()
+	return doc, nil
 }

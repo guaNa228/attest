@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -57,10 +56,7 @@ type Credentials struct {
 }
 
 func (apiCfg *apiConfig) credentialsByName(fullName string) (Credentials, error) {
-	splittedName := strings.Split(translit.ToLatin(strings.ToLower(fullName)), " ")
-	log.Println(fullName)
-	log.Println(len(fullName))
-	log.Println(splittedName)
+	splittedName := strings.Split(translit.ToLatin(strings.ToLower(fullName), translit.RussianLogin), " ")
 	var login string
 	for index, name := range splittedName {
 		if index == 0 {

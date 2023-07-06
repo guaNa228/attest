@@ -12,7 +12,7 @@ import (
 )
 
 // const value of classes, that we don't wan't to add
-var bannedClasses []string = []string{"Элективная физическая культура и спорт", "Иностранный язык: Русский язык как иностранный", "Модуль саморазвития (SoftSkills)"}
+var bannedClasses []string = []string{"Элективная физическая культура и спорт", "Иностранный язык: Русский язык как иностранный", "Модуль саморазвития (SoftSkills)", "Физика", "Высшая математика"}
 var classTypesToParse []string = []string{"Практика"}
 
 type FacultyParsed struct {

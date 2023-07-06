@@ -78,6 +78,7 @@ func (apiCfg *apiConfig) createTeacherInstance(name string, teacherId int32) (db
 		Password:  uniqueCredentials.password,
 		Role:      "teacher",
 		GroupID:   uuid.NullUUID{},
+		Email:     sql.NullString{},
 	}, nil
 }
 

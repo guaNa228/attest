@@ -90,6 +90,7 @@ type User struct {
 	Role      string `json:"role"`
 	TeacherID sql.NullInt32 `json:"teacher_id"`
 	GroupID   uuid.NullUUID `json:"group_id"`
+	Email     sql.NullString `json:"email"`
 }
 
 type Group struct {

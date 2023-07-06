@@ -5,7 +5,7 @@ import (
 	"unicode"
 )
 
-var RussianASCII = map[rune]string{
+var RussianLogin = map[rune]string{
 	'а': "a",
 	'б': "b",
 	'в': "v",
@@ -41,7 +41,43 @@ var RussianASCII = map[rune]string{
 	'я': "ya",
 }
 
-func ToLatin(s string) string {
+var RussianEmail = map[rune]string{
+	'а': "a",
+	'б': "b",
+	'в': "v",
+	'г': "g",
+	'д': "d",
+	'е': "e",
+	'ё': "_",
+	'ж': "zgh",
+	'з': "z",
+	'и': "i",
+	'й': "y",
+	'к': "k",
+	'л': "l",
+	'м': "m",
+	'н': "n",
+	'о': "o",
+	'п': "p",
+	'р': "r",
+	'с': "s",
+	'т': "t",
+	'у': "u",
+	'ф': "f",
+	'х': "h",
+	'ц': "c",
+	'ч': "ch",
+	'ш': "sh",
+	'щ': "sh",
+	'ъ': "",
+	'ы': "u",
+	'ь': "",
+	'э': "e",
+	'ю': "u",
+	'я': "ya",
+}
+
+func ToLatin(s string, RussianASCII map[rune]string) string {
 	runes := []rune(s)
 	out := make([]rune, 0, len(s))
 	for i, currentRune := range runes {

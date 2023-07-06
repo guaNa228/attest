@@ -26,8 +26,18 @@ func (apiCfg *apiConfig) parsingResult() {
 
 	if errorCounter > 0 {
 		logChan <- "Finishing operation due to insufficient parsing data"
+		return
 	} else {
 		apiCfg.parsedBunkInsert(dbInstances, &logChan, &errorChan, &errorCounter)
+	}
+
+	parsedTeachersEmails := parsing.ParseTeachersMails(apiCfg.DB, &logChan, &errorChan)
+
+	fmt.Println(parsedTeachersEmails)
+
+	if errorCounter == 0 {
+		logChan <- "Operation succeded, all tables filled with parsed data!"
+		return
 	}
 
 	logWG := sync.WaitGroup{}

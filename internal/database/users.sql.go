@@ -202,3 +202,82 @@ func (q *Queries) GetTeacherIDByNameAndTeacherId(ctx context.Context, arg GetTea
 	err := row.Scan(&id)
 	return id, err
 }
+
+const getUserByEmail = `-- name: GetUserByEmail :one
+select id
+from users
+where email=$1
+`
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email sql.NullString) (uuid.UUID, error) {
+	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const deleteSemesterUsers = `-- name: DeleteSemesterUsers :exec
+DELETE from users
+WHERE email is null
+    and role = 'student'
+`
+
+func (q *Queries) DeleteSemesterUsers(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deleteSemesterUsers)
+	return err
+}
+
+const removeGroupID = `-- name: RemoveGroupID :exec
+UPDATE users
+SET group_id = NULL
+WHERE group_id IS NOT NULL
+    and role = 'student'
+`
+
+func (q *Queries) RemoveGroupID(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, removeGroupID)
+	return err
+}
+
+const getTeachersWithUniqueName = `-- name: GetTeachersWithUniqueName :many
+SELECT id,
+    name
+FROM users
+WHERE role = 'teacher'
+    AND name IN (
+        SELECT name
+        FROM users
+        WHERE role = 'teacher'
+        GROUP BY name
+        HAVING COUNT(*) = 1
+    )
+    and email is null
+`
+
+type GetTeachersWithUniqueNameRow struct {
+	ID   uuid.UUID
+	Name string
+}
+
+func (q *Queries) GetTeachersWithUniqueName(ctx context.Context) ([]*GetTeachersWithUniqueNameRow, error) {
+	rows, err := q.db.QueryContext(ctx, getTeachersWithUniqueName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*GetTeachersWithUniqueNameRow
+	for rows.Next() {
+		var i GetTeachersWithUniqueNameRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

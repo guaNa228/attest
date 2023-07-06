@@ -82,3 +82,24 @@ func (q *Queries) DeleteGroupByID(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, deleteGroupByID, id)
 	return err
 }
+
+const getGroupByFullCode = `-- name: GetGroupByFullCode :one
+SELECT g.id
+FROM groups g,
+    streams s
+WHERE g.stream = s.id
+    and s.code = $1
+    and g.subcode = $2
+`
+
+type GetGroupByFullCodeParams struct {
+	Code    string
+	Subcode string
+}
+
+func (q *Queries) GetGroupByFullCode(ctx context.Context, arg GetGroupByFullCodeParams) (uuid.UUID, error) {
+	row := q.db.QueryRowContext(ctx, getGroupByFullCode, arg.Code, arg.Subcode)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}

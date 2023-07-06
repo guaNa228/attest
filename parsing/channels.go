@@ -17,3 +17,9 @@ func parsedGroupsChannelRead(c *CourseParsed, groupsChannel chan *GroupParsed) {
 		c.Groups = append(c.Groups, group)
 	}
 }
+
+func readTeachersMailsData(parsedTeachersEmailsSlice *[]*parsedTeachersEmails, channel *chan *parsedTeachersEmails) {
+	for teacherEmailRead := range *channel {
+		*parsedTeachersEmailsSlice = append(*parsedTeachersEmailsSlice, teacherEmailRead)
+	}
+}
