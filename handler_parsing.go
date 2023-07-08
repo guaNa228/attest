@@ -72,10 +72,4 @@ func (apiCfg *apiConfig) parsingResult(params parsing.Parameters, errCounter *in
 
 	logWG.Wait()
 	errorWG.Wait()
-
-	if *errCounter == 0 {
-		logChan <- "Operation succeded, all tables filled with parsed data!"
-		return
-	}
-
 }

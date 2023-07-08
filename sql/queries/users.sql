@@ -83,3 +83,11 @@ WHERE role = 'teacher'
 select *
 from users
 where email = $1;
+-- name: GetUsersWithEmails :many
+select id,
+    login,
+    password,
+    email
+from users
+where email is not null
+    and email_sent = false;

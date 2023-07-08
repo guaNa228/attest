@@ -99,6 +99,8 @@ func main() {
 
 	v1Router.Post("/mails_parsing", apiCfg.middlewareAuth(apiCfg.handleEmailParsing, []string{}))
 
+	v1Router.Post("/mails_send", apiCfg.middlewareAuth(apiCfg.handleEmailSending, []string{}))
+
 	v1Router.Route("/", func(ws chi.Router) {
 		ws.Get("/ws", wsHandler)
 	})

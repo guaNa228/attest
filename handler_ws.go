@@ -35,7 +35,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 
 	GlobalWsWg.Wait()
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	GlobalWsConn.Close()
 }

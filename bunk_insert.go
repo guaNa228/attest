@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/google/uuid"
 	db "github.com/guaNa228/attest/internal/database"
 	"github.com/guaNa228/attest/parsing"
 )
@@ -39,6 +40,8 @@ func fillTypeData(v interface{}) ([]interface{}, error) {
 		return []interface{}{x.Id, x.Email}, nil
 	case db.Attestation:
 		return []interface{}{x.ID, x.Workload, x.Student, x.Month, nil, nil}, nil
+	case uuid.UUID:
+		return []interface{}{x, true}, nil
 	default:
 		return []interface{}{}, fmt.Errorf("unsupported type %t thrown for bunk creation", x)
 	}
@@ -246,7 +249,6 @@ func itemsBunkUpdate[T any](items []*T, typeTitle string, fieldToUpdate string, 
 	for _, chunk := range chunkList {
 		chunkWg.Add(1)
 		go func(chunk []*T) {
-
 			caseStrings := []string{}
 			valueArgs := []interface{}{}
 			defer chunkWg.Done()
@@ -263,6 +265,7 @@ func itemsBunkUpdate[T any](items []*T, typeTitle string, fieldToUpdate string, 
 				valueArgs = append(valueArgs, values...)
 			}
 
+			fmt.Println(valueArgs...)
 			//log.Println(fmt.Sprintf("UPDATE %s SET %s = (CASE %s ELSE %s)", typeTitle, fieldToUpdate, strings.Join(caseStrings, "\n"), fieldToUpdate))
 
 			stmt, err := tx.Prepare(fmt.Sprintf("UPDATE %s SET %s = (CASE %s ELSE %s END)", typeTitle, fieldToUpdate, strings.Join(caseStrings, "\n"), fieldToUpdate))

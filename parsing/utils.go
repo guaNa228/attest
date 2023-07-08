@@ -7,10 +7,8 @@ import (
 	"net/mail"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/PuerkitoBio/goquery"
 	"github.com/chromedp/chromedp"
 )
 
@@ -139,35 +137,24 @@ func IsValidEmail(email string) bool {
 	return err == nil
 }
 
-func waitForPageLoad(url string) (*goquery.Document, error) {
+func waitForPageLoad(url string) (string, error) {
 	// Create a new context
 	ctx, cancel := chromedp.NewContext(context.Background())
 
-	// Use a WaitGroup to wait for the page to fully load
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	// Variables to store the HTML content
+	// Variable to store the HTML content
 	var htmlContent string
 
-	// Run the task to navigate to the URL and wait for a visible element
+	// Run the task to navigate to the URL and wait for the condition
 	err := chromedp.Run(ctx,
 		chromedp.Navigate(url),
 		chromedp.WaitVisible("body", chromedp.ByQuery),
-		chromedp.OuterHTML("html", &htmlContent),
+		chromedp.EvaluateAsDevTools(`document.querySelector("li.mail").firstElementChild.textContent`, &htmlContent),
 	)
 	if err != nil {
 		cancel()
-		return nil, err
-	}
-
-	// Load the HTML content into a goquery.Document
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(htmlContent))
-	if err != nil {
-		cancel()
-		return nil, err
+		return "", err
 	}
 
 	cancel()
-	return doc, nil
+	return htmlContent, nil
 }

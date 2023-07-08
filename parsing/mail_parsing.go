@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/google/uuid"
 	db "github.com/guaNa228/attest/internal/database"
@@ -30,77 +31,115 @@ func ParseTeachersMails(apiCfg *db.Queries, logCh *chan string, errCh *chan erro
 		return nil
 	}
 
-	facultyPrefixesLength := len(facultyPrefixes)
-	for _, teacher := range teachers {
-		for facultyIndex, facultyPrefix := range facultyPrefixes {
-			parsedTeacherEmail, err := parseSingleTeacher(teacher.ID, teacher.Name, facultyPrefix)
-			if err != nil {
-				if facultyIndex == facultyPrefixesLength-1 {
-					*logCh <- err.Error()
-				}
-			} else {
-				parsingResult = append(parsingResult, &parsedTeacherEmail)
-				*logCh <- fmt.Sprintf("%s email %s found on %s", teacher.Name, parsedTeacherEmail.Email, facultyPrefix)
+	teachersChunks := ChunkItems(teachers, int(len(teachers)/11))
+
+	teachersDataChannel := make(chan *ParsedTeachersEmails)
+	go readChannelData(&parsingResult, &teachersDataChannel)
+
+	duplicatedTeachers := []*uuid.UUID{}
+	duplicateTeachersChannel := make(chan *uuid.UUID)
+	go readChannelData(&duplicatedTeachers, &duplicateTeachersChannel)
+
+	teachersWg := sync.WaitGroup{}
+	for _, chunk := range teachersChunks {
+		teachersWg.Add(1)
+		go parseTeachersMailsChunk(chunk, errCh, logCh, &teachersDataChannel, &duplicateTeachersChannel, &teachersWg)
+	}
+
+	teachersWg.Wait()
+
+	dataWG := sync.WaitGroup{}
+	dataWG.Add(1)
+	go func() {
+		defer dataWG.Done()
+		close(teachersDataChannel)
+	}()
+
+	duplicatesWG := sync.WaitGroup{}
+	duplicatesWG.Add(1)
+	go func() {
+		defer duplicatesWG.Done()
+		close(duplicateTeachersChannel)
+	}()
+
+	dataWG.Wait()
+	duplicatesWG.Wait()
+
+	clearResult := []*ParsedTeachersEmails{}
+
+	var isDuplicate bool
+
+	for _, teacherEmail := range parsingResult {
+		isDuplicate = false
+		for _, duplicateTeacherId := range duplicatedTeachers {
+			if teacherEmail.Id == *duplicateTeacherId {
 				break
+			}
+		}
+		if !isDuplicate {
+			clearResult = append(clearResult, teacherEmail)
+		}
+	}
+
+	*logCh <- fmt.Sprintf("Found %v emails from %v, which were ordered for search", len(clearResult), len(teachers))
+
+	return &clearResult
+}
+
+func parseTeachersMailsChunk(teachersDataChunk []*db.GetTeachersWithUniqueNameRow, errCh *chan error, logCh *chan string, dataCh *chan *ParsedTeachersEmails, maliciousChan *chan *uuid.UUID, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	currentTeacherErrorCounter := 0
+	facultyPrefixesLength := len(facultyPrefixes)
+	for _, teacher := range teachersDataChunk {
+		currentTeacherErrorCounter = 0
+		for _, facultyPrefix := range facultyPrefixes {
+			err := parseSingleTeacher(teacher.ID, teacher.Name, facultyPrefix, dataCh)
+			if err != nil {
+				currentTeacherErrorCounter++
+			}
+		}
+		if currentTeacherErrorCounter < facultyPrefixesLength-1 {
+			*maliciousChan <- &teacher.ID
+			*logCh <- fmt.Sprintf("can't determine %s email, found more than 1 faculty", teacher.Name)
+		} else {
+			if currentTeacherErrorCounter == facultyPrefixesLength-1 {
+				*logCh <- fmt.Sprintf("Found email of %s", teacher.Name)
+			} else {
+				*logCh <- fmt.Sprintf("%s email is not found", teacher.Name)
 			}
 		}
 	}
 
-	*logCh <- fmt.Sprintf("Found %v emails from %v, which were ordered for search", len(parsingResult), len(teachers))
-
-	return &parsingResult
 }
 
-// func parseTeachersMailsChunk(teachersDataChunk *[]*db.GetTeachersWithUniqueNameRow, errCh *chan error, logCh *chan string, dataCh *chan *parsedTeachersEmails, wg *sync.WaitGroup) {
-// 	defer wg.Done()
-// 	facultyPrefixesLength := len(facultyPrefixes)
-// 	for teacherIndexInChunk, teacher := range *teachersDataChunk {
-// 		fmt.Println(teacherIndexInChunk, teacher.Name)
-// 		for facultyIndex, facultyPrefix := range facultyPrefixes {
-// 			parsedTeacherEmail, err := parseSingleTeacher(teacher.ID, teacher.Name, facultyPrefix)
-// 			if err != nil {
-// 				if facultyIndex == facultyPrefixesLength-1 {
-// 					*logCh <- err.Error()
-// 				}
-// 			} else {
-// 				*dataCh <- &parsedTeacherEmail
-// 				*logCh <- fmt.Sprintf("%s email fount on the %v try on %s", teacher.Name, facultyIndex, facultyPrefix)
-// 				break
-// 			}
-// 		}
-// 	}
-// }
-
-func parseSingleTeacher(id uuid.UUID, name string, facultyPrefix string) (ParsedTeachersEmails, error) {
+func parseSingleTeacher(id uuid.UUID, name string, facultyPrefix string, dataChan *chan *ParsedTeachersEmails) error {
 	url := fmt.Sprintf("https://%s.spbstu.ru/person/%s", facultyPrefix, translit.ToLatin(strings.Replace(strings.ToLower(name), " ", "_", -1), translit.RussianEmail))
 
 	resp, err := http.Head(url)
 	if err != nil {
-		return ParsedTeachersEmails{}, fmt.Errorf("%s email parsing failed", name)
+		return fmt.Errorf("%s can't make a request to page", name)
 	}
 	defer resp.Body.Close()
 
 	responseCode := resp.StatusCode
 
-	fmt.Println(fmt.Sprintf("https://%s.spbstu.ru/person/%s", facultyPrefix, translit.ToLatin(strings.Replace(strings.ToLower(name), " ", "_", -1), translit.RussianEmail)), responseCode)
-
 	if responseCode == http.StatusNotFound {
-		return ParsedTeachersEmails{}, fmt.Errorf("%s email parsing failed", name)
+		return fmt.Errorf("%s page is 404", name)
 	} else {
-		doc, err := waitForPageLoad(url)
+		email, err := waitForPageLoad(url)
 		if err != nil {
-			return ParsedTeachersEmails{}, fmt.Errorf("%s email parsing failed", name)
+			return fmt.Errorf("%s page didn't load", name)
 		}
-
-		email := doc.Find("li.mail").Children().First().Children().First().Text()
 
 		if !IsValidEmail(email) {
-			return ParsedTeachersEmails{}, fmt.Errorf("%s email parsing failed", name)
+			return fmt.Errorf("%s not valid email", name)
 		}
 
-		return ParsedTeachersEmails{
+		*dataChan <- &ParsedTeachersEmails{
 			Id:    id,
 			Email: email,
-		}, nil
+		}
+		return nil
 	}
 }

@@ -1,5 +1,7 @@
 package parsing
 
+import "sync"
+
 func parsedFacultiesChannelRead(fs *[]*FacultyParsed, facultiesChannel chan *FacultyParsed) {
 	for faculty := range facultiesChannel {
 		*fs = append(*fs, faculty)
@@ -18,8 +20,17 @@ func parsedGroupsChannelRead(c *CourseParsed, groupsChannel chan *GroupParsed) {
 	}
 }
 
-// func readTeachersMailsData(parsedTeachersEmailsSlice *[]*ParsedTeachersEmails, channel *chan *ParsedTeachersEmails) {
-// 	for teacherEmailRead := range *channel {
-// 		*parsedTeachersEmailsSlice = append(*parsedTeachersEmailsSlice, teacherEmailRead)
-// 	}
-// }
+func readChannelData[T any](sliceToAdd *[]*T, channel *chan *T) {
+	for dataPiece := range *channel {
+		*sliceToAdd = append(*sliceToAdd, dataPiece)
+	}
+}
+
+func ReadChannelDataWithWG[T any](sliceToAdd *[]*T, channel *chan *T, readingWg *sync.WaitGroup) {
+	for dataPiece := range *channel {
+		go func(pieceOfData *T) {
+			defer readingWg.Done()
+			*sliceToAdd = append(*sliceToAdd, pieceOfData)
+		}(dataPiece)
+	}
+}

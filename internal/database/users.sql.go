@@ -306,3 +306,48 @@ func (q *Queries) GetFullUserByEmail(ctx context.Context, email sql.NullString) 
 	)
 	return i, err
 }
+
+const getUsersWithEmails = `-- name: GetUsersWithEmails :many
+select id,
+    login,
+    password,
+    email
+from users
+where email is not null and email_sent=false
+`
+
+type GetUsersWithEmailsRow struct {
+	ID       uuid.UUID
+	Login    string
+	Password string
+	Email    sql.NullString
+}
+
+func (q *Queries) GetUsersWithEmails(ctx context.Context) ([]GetUsersWithEmailsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getUsersWithEmails)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUsersWithEmailsRow
+	for rows.Next() {
+		var i GetUsersWithEmailsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Login,
+			&i.Password,
+			&i.Email,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
