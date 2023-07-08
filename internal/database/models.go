@@ -66,13 +66,14 @@ func (ns NullMonthEnum) Value() (driver.Value, error) {
 }
 
 type Attestation struct {
-	ID                 uuid.UUID
-	SemesterActivityID uuid.UUID
-	StudentID          uuid.UUID
-	Month              MonthEnum
-	Result             sql.NullBool
-	Comment            sql.NullString
+	ID       uuid.UUID `json:"id"`
+	Workload uuid.UUID `json:"workload"`
+	Student  uuid.UUID `json:"student"`
+	Month    MonthEnum `json:"month"`
+	Result   sql.NullBool `json:"result"`
+	Comment  sql.NullString `json:"comment"`
 }
+
 
 type Program struct {
 	ID         uuid.UUID `json:"id"`

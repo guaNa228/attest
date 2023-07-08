@@ -134,7 +134,7 @@ func ChunkItems[T any](items []*T, size int) [][]*T {
 	return chunkList
 }
 
-func isValidEmail(email string) bool {
+func IsValidEmail(email string) bool {
 	_, err := mail.ParseAddress(email)
 	return err == nil
 }

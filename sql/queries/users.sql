@@ -79,3 +79,7 @@ WHERE role = 'teacher'
         HAVING COUNT(*) = 1
     )
     and email is null;
+-- name: GetFullUserByEmail :one
+select *
+from users
+where email = $1;

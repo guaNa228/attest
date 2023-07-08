@@ -179,24 +179,10 @@ func (apiCfg *apiConfig) handlerCreateStudent(w http.ResponseWriter, r *http.Req
 	respondWithJSON(w, 200, userToCreate)
 }
 
-func (apiCfg *apiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request, user db.User) {
-	//Old stubGroups
-	// grps := stubGroups(5000, "a")
-	// itemsBunkCreate(grps, "groups")
-	// respondWithJSON(w, 200, struct{}{})
+type Role struct {
+	Role string `json:"role"`
 }
 
-//Old
-// func stubGroups(n int, index string) []*db.Group {
-// 	result := []*db.Group{}
-// 	for i := 0; i < n; i++ {
-// 		result = append(result, &db.Group{
-// 			ID:        uuid.New(),
-// 			CreatedAt: time.Now(),
-// 			UpdatedAt: time.Now(),
-// 			S:      "test",
-// 			Subcode:      fmt.Sprintf("%v%s", i, index),
-// 		})
-// 	}
-// 	return result
-// }
+func (apiCfg *apiConfig) handlerRoleByJWT(w http.ResponseWriter, r *http.Request, user db.User) {
+	respondWithJSON(w, 200, Role{Role: user.Role})
+}

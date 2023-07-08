@@ -70,7 +70,7 @@ var RussianEmail = map[rune]string{
 	'ш': "sh",
 	'щ': "sh",
 	'ъ': "",
-	'ы': "u",
+	'ы': "y",
 	'ь': "",
 	'э': "e",
 	'ю': "u",

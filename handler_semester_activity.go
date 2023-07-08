@@ -1,120 +1,109 @@
 package main
 
-import (
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"time"
+// func (apiCfg *apiConfig) handlerCreateSemesterActivity(w http.ResponseWriter, r *http.Request, user db.User) {
+// 	type parameters struct {
+// 		GroupID   uuid.UUID `json:"group_id"`
+// 		ClassID   uuid.UUID `json:"class_id"`
+// 		TeacherID uuid.UUID `json:"teacher_id"`
+// 	}
+// 	decoder := json.NewDecoder(r.Body)
+// 	params := parameters{}
+// 	err := decoder.Decode(&params)
+// 	if err != nil {
+// 		respondWithError(w, 400, fmt.Sprintf("Error parsing JSON: %v", err))
+// 		return
+// 	}
 
-	"github.com/go-chi/chi"
-	"github.com/google/uuid"
-	db "github.com/guaNa228/attest/internal/database"
-)
+// 	semesterActivityToCreate, err := apiCfg.DB.CreateSemesterActivity(r.Context(), db.CreateSemesterActivityParams{
+// 		ID:        uuid.New(),
+// 		CreatedAt: time.Now().UTC(),
+// 		UpdatedAt: time.Now().UTC(),
+// 		GroupID:   params.GroupID,
+// 		ClassID:   params.ClassID,
+// 		TeacherID: params.TeacherID,
+// 	})
 
-func (apiCfg *apiConfig) handlerCreateSemesterActivity(w http.ResponseWriter, r *http.Request, user db.User) {
-	type parameters struct {
-		GroupID   uuid.UUID `json:"group_id"`
-		ClassID   uuid.UUID `json:"class_id"`
-		TeacherID uuid.UUID `json:"teacher_id"`
-	}
-	decoder := json.NewDecoder(r.Body)
-	params := parameters{}
-	err := decoder.Decode(&params)
-	if err != nil {
-		respondWithError(w, 400, fmt.Sprintf("Error parsing JSON: %v", err))
-		return
-	}
+// 	if err != nil {
+// 		respondWithError(w, 400, fmt.Sprintf("Couldn't create semester activity: %v", err))
+// 		return
+// 	}
 
-	semesterActivityToCreate, err := apiCfg.DB.CreateSemesterActivity(r.Context(), db.CreateSemesterActivityParams{
-		ID:        uuid.New(),
-		CreatedAt: time.Now().UTC(),
-		UpdatedAt: time.Now().UTC(),
-		GroupID:   params.GroupID,
-		ClassID:   params.ClassID,
-		TeacherID: params.TeacherID,
-	})
+// 	respondWithJSON(w, 201, semesterActivityToCreate)
+// }
 
-	if err != nil {
-		respondWithError(w, 400, fmt.Sprintf("Couldn't create semester activity: %v", err))
-		return
-	}
+// func (apiCfg *apiConfig) handlerDeleteSemesterActivity(w http.ResponseWriter, r *http.Request, user db.User) {
+// 	const instance = "semesterActivity"
+// 	const paramToSearch = "semesterActivityToDeleteID"
+// 	semesterActivityToDelete := chi.URLParam(r, paramToSearch)
+// 	if semesterActivityToDelete == "" {
+// 		respondWithError(w, 400, fmt.Sprintf("Wrong request address. Should be %v/{%vId}, not {%v}?{%vId}={%v}",
+// 			instance,
+// 			paramToSearch,
+// 			instance,
+// 			instance,
+// 			paramToSearch))
+// 	}
 
-	respondWithJSON(w, 201, semesterActivityToCreate)
-}
+// 	semesterActivityToDeleteID, err := uuid.Parse(semesterActivityToDelete)
 
-func (apiCfg *apiConfig) handlerDeleteSemesterActivity(w http.ResponseWriter, r *http.Request, user db.User) {
-	const instance = "semesterActivity"
-	const paramToSearch = "semesterActivityToDeleteID"
-	semesterActivityToDelete := chi.URLParam(r, paramToSearch)
-	if semesterActivityToDelete == "" {
-		respondWithError(w, 400, fmt.Sprintf("Wrong request address. Should be %v/{%vId}, not {%v}?{%vId}={%v}",
-			instance,
-			paramToSearch,
-			instance,
-			instance,
-			paramToSearch))
-	}
+// 	if err != nil {
+// 		respondWithError(w, 400, fmt.Sprintf("Corrupted %v id: %v", instance, err))
+// 		return
+// 	}
 
-	semesterActivityToDeleteID, err := uuid.Parse(semesterActivityToDelete)
+// 	err = apiCfg.DB.DeleteSemesterActivityById(r.Context(), semesterActivityToDeleteID)
+// 	if err != nil {
+// 		respondWithError(w, 400, fmt.Sprintf("Couldn't delete %v by ID: %v", instance, err))
+// 		return
+// 	}
 
-	if err != nil {
-		respondWithError(w, 400, fmt.Sprintf("Corrupted %v id: %v", instance, err))
-		return
-	}
+// 	respondWithJSON(w, 200, struct{}{})
+// }
 
-	err = apiCfg.DB.DeleteSemesterActivityById(r.Context(), semesterActivityToDeleteID)
-	if err != nil {
-		respondWithError(w, 400, fmt.Sprintf("Couldn't delete %v by ID: %v", instance, err))
-		return
-	}
+// func (apiCfg *apiConfig) handlerUpdateSemesterActivity(w http.ResponseWriter, r *http.Request, user db.User) {
+// 	const instance = "semesterActivity"
+// 	const paramToSearch = "semesterActivityToUpdateID"
+// 	semesterActivityToUpdate := chi.URLParam(r, paramToSearch)
+// 	if semesterActivityToUpdate == "" {
+// 		respondWithError(w, 400, fmt.Sprintf("Wrong request address. Should be {%v}/{%v}, not {%v}?{%v}Id={%v}",
+// 			instance,
+// 			paramToSearch,
+// 			instance,
+// 			instance,
+// 			paramToSearch))
+// 	}
 
-	respondWithJSON(w, 200, struct{}{})
-}
+// 	semesterActivityToUpdateID, err := uuid.Parse(semesterActivityToUpdate)
 
-func (apiCfg *apiConfig) handlerUpdateSemesterActivity(w http.ResponseWriter, r *http.Request, user db.User) {
-	const instance = "semesterActivity"
-	const paramToSearch = "semesterActivityToUpdateID"
-	semesterActivityToUpdate := chi.URLParam(r, paramToSearch)
-	if semesterActivityToUpdate == "" {
-		respondWithError(w, 400, fmt.Sprintf("Wrong request address. Should be {%v}/{%v}, not {%v}?{%v}Id={%v}",
-			instance,
-			paramToSearch,
-			instance,
-			instance,
-			paramToSearch))
-	}
+// 	if err != nil {
+// 		respondWithError(w, 400, fmt.Sprintf("Corrupted %v id: %v", instance, err))
+// 		return
+// 	}
 
-	semesterActivityToUpdateID, err := uuid.Parse(semesterActivityToUpdate)
+// 	type parameters struct {
+// 		GroupID   uuid.UUID `json:"group_id"`
+// 		ClassID   uuid.UUID `json:"class_id"`
+// 		TeacherID uuid.UUID `json:"teacher_id"`
+// 	}
 
-	if err != nil {
-		respondWithError(w, 400, fmt.Sprintf("Corrupted %v id: %v", instance, err))
-		return
-	}
+// 	decoder := json.NewDecoder(r.Body)
+// 	params := parameters{}
+// 	err = decoder.Decode(&params)
+// 	if err != nil {
+// 		respondWithError(w, 400, fmt.Sprintf("Error parsing JSON: %v", err))
+// 		return
+// 	}
 
-	type parameters struct {
-		GroupID   uuid.UUID `json:"group_id"`
-		ClassID   uuid.UUID `json:"class_id"`
-		TeacherID uuid.UUID `json:"teacher_id"`
-	}
+// 	newSemesterActivity, err := apiCfg.DB.UpdateSemesterActivityById(r.Context(), db.UpdateSemesterActivityByIdParams{
+// 		ID:        semesterActivityToUpdateID,
+// 		GroupID:   params.GroupID,
+// 		TeacherID: params.TeacherID,
+// 		ClassID:   params.ClassID,
+// 	})
+// 	if err != nil {
+// 		respondWithError(w, 400, fmt.Sprintf("Couldn't update %v by ID: %v", instance, err))
+// 		return
+// 	}
 
-	decoder := json.NewDecoder(r.Body)
-	params := parameters{}
-	err = decoder.Decode(&params)
-	if err != nil {
-		respondWithError(w, 400, fmt.Sprintf("Error parsing JSON: %v", err))
-		return
-	}
-
-	newSemesterActivity, err := apiCfg.DB.UpdateSemesterActivityById(r.Context(), db.UpdateSemesterActivityByIdParams{
-		ID:        semesterActivityToUpdateID,
-		GroupID:   params.GroupID,
-		TeacherID: params.TeacherID,
-		ClassID:   params.ClassID,
-	})
-	if err != nil {
-		respondWithError(w, 400, fmt.Sprintf("Couldn't update %v by ID: %v", instance, err))
-		return
-	}
-
-	respondWithJSON(w, 200, newSemesterActivity)
-}
+// 	respondWithJSON(w, 200, newSemesterActivity)
+// }

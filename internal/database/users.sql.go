@@ -216,6 +216,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email sql.NullString) (uui
 	return id, err
 }
 
+
 const deleteSemesterUsers = `-- name: DeleteSemesterUsers :exec
 DELETE from users
 WHERE email is null
@@ -280,4 +281,28 @@ func (q *Queries) GetTeachersWithUniqueName(ctx context.Context) ([]*GetTeachers
 		return nil, err
 	}
 	return items, nil
+}
+
+const getFullUserByEmail = `-- name: GetFullUserByEmail :one
+select id, created_at, updated_at, name, login, password, role, teacher_id, group_id, email
+from users
+where email = $1
+`
+
+func (q *Queries) GetFullUserByEmail(ctx context.Context, email sql.NullString) (User, error) {
+	row := q.db.QueryRowContext(ctx, getFullUserByEmail, email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Name,
+		&i.Login,
+		&i.Password,
+		&i.Role,
+		&i.TeacherID,
+		&i.GroupID,
+		&i.Email,
+	)
+	return i, err
 }

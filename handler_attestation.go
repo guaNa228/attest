@@ -1,54 +1,79 @@
 package main
 
 import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 
+	"github.com/google/uuid"
 	db "github.com/guaNa228/attest/internal/database"
+	"github.com/guaNa228/attest/logger"
 )
 
-// Attestation spawn !!!!!!!!!!NEEDED!!!!!!!!!!
-// func (apiCfg *apiConfig) handleAttestationSpawn(w http.ResponseWriter, r *http.Request, user db.User) {
-// 	type parameters struct {
-// 		MonthEnum string `json:"month"`
-// 	}
-// 	decoder := json.NewDecoder(r.Body)
-// 	params := parameters{}
-// 	err := decoder.Decode(&params)
-// 	if err != nil {
-// 		respondWithError(w, 400, fmt.Sprintf("Error parsing JSON: %v", err))
-// 		return
-// 	}
+func (apiCfg *apiConfig) handleAttestationSpawn(w http.ResponseWriter, r *http.Request, user db.User) {
+	type parameters struct {
+		MonthEnum string `json:"month"`
+	}
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		respondWithError(w, 400, fmt.Sprintf("Error parsing JSON: %v", err))
+		return
+	}
 
-// 	preAttestationData, err := apiCfg.DB.GetPreAttestationData(context.Background())
-// 	fmt.Println(len(preAttestationData))
-// 	if err != nil {
-// 		respondWithError(w, 400, fmt.Sprintf("Database is corrupted: %v", err))
-// 	}
+	preAttestationData, err := apiCfg.DB.GetPreAttestationData(context.Background())
+	if err != nil {
+		respondWithError(w, 400, fmt.Sprintf("Database is corrupted: %v", err))
+	}
 
-// 	attestationData := []*db.Attestation{}
+	attestationData := []*db.Attestation{}
 
-// 	for _, preAttestationItem := range preAttestationData {
-// 		attestationData = append(attestationData, &db.Attestation{
-// 			ID:                 uuid.New(),
-// 			StudentID:          preAttestationItem.StudentID,
-// 			SemesterActivityID: preAttestationItem.SemesterActivityID,
-// 			Month:              db.MonthEnum(params.MonthEnum),
-// 			Result:             sql.NullBool{Valid: false},
-// 			Comment:            sql.NullString{Valid: false},
-// 		})
-// 	}
-// 	fmt.Println(len(attestationData))
-// 	errorList := itemsBunkCreate(attestationData, "attestation")
-// 	if errorList != nil {
-// 		for _, err := range errorList {
-// 			fmt.Println(err)
-// 		}
-// 		respondWithJSON(w, 500, "Unable to spawn attestation due to server problems")
-// 	}
+	for _, preAttestationItem := range preAttestationData {
+		attestationData = append(attestationData, &db.Attestation{
+			ID:       uuid.New(),
+			Student:  preAttestationItem.Student,
+			Workload: preAttestationItem.Workload,
+			Month:    db.MonthEnum(params.MonthEnum),
+			Result:   sql.NullBool{Valid: false},
+			Comment:  sql.NullString{Valid: false},
+		})
+	}
 
-// 	respondWithJSON(w, 200, struct{}{})
-// }
+	errorChan := make(chan error)
+
+	var errorCounter int
+
+	go logger.ErrLogger(errorChan, &errorCounter, GlobalWsConn, false)
+
+	outerWg := sync.WaitGroup{}
+
+	outerWg.Add(1)
+
+	itemsBunkCreate(attestationData, "attestation", &outerWg, &errorChan, &errorCounter)
+
+	outerWg.Wait()
+
+	errorWG := sync.WaitGroup{}
+	errorWG.Add(1)
+	go func() {
+		defer errorWG.Done()
+		close(errorChan)
+	}()
+
+	errorWG.Wait()
+
+	if errorCounter == 0 {
+		respondWithJSON(w, 200, struct{}{})
+	} else {
+		respondWithError(w, 500, "Something went wrong")
+	}
+
+}
 
 func (apiCfg *apiConfig) handleAttestationGet(w http.ResponseWriter, r *http.Request, user db.User) {
 	if user.Role == "teacher" {
@@ -62,20 +87,83 @@ func (apiCfg *apiConfig) handleAttestationGet(w http.ResponseWriter, r *http.Req
 		respondWithJSON(w, 200, attestationData)
 		return
 	}
+	if user.Role == "student" {
+		attestationData, err := apiCfg.DB.GetStudentsAttestationData(r.Context(), user.ID)
+
+		if err != nil {
+			respondWithError(w, 400, fmt.Sprintf("Couldn't get attestation data: %v", err))
+			return
+		}
+
+		respondWithJSON(w, 200, attestationData)
+		return
+	}
 	respondWithError(w, 403, "You are not allowed here")
 }
 
-// func stubAttestation(n int, index string) []*db.Attestation {
-// 	result := []*db.Attestation{}
-// 	for i := 0; i < n; i++ {
-// 		result = append(result, &Group{
-// 			ID:        uuid.New(),
-// 			CreatedAt: time.Now(),
-// 			UpdatedAt: time.Now(),
-// 			Name:      "test",
-// 			Code:      fmt.Sprintf("%v%s", i, index),
-// 		})
-// 	}
-// 	return result
+type NullableBool struct {
+	Valid bool
+	Value bool
+}
 
-// }
+func (nb *NullableBool) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		*nb = NullableBool{Valid: false, Value: false}
+		return nil
+	} else {
+		if string(data) == "true" {
+			*nb = NullableBool{Valid: true, Value: true}
+			return nil
+		} else if string(data) == "false" {
+			*nb = NullableBool{Valid: false, Value: true}
+			return nil
+		} else {
+			return errors.New("unknown type passed into result")
+		}
+	}
+}
+
+func (apiCfg *apiConfig) handleAttestationPost(w http.ResponseWriter, r *http.Request, user db.User) {
+	type attestationUnit struct {
+		Id      uuid.UUID    `json:"id"`
+		Result  NullableBool `json:"result"`
+		Comment string       `json:"comment"`
+	}
+
+	type parameters struct {
+		Data []attestationUnit `json:"data"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err := decoder.Decode(&params)
+
+	fmt.Println(params)
+	if err != nil {
+		fmt.Println(1)
+		respondWithError(w, 400, fmt.Sprintf("Error parsing JSON: %v", err))
+		return
+	}
+
+	for _, attestationToUpdate := range params.Data {
+		result := sql.NullBool{}
+		if attestationToUpdate.Result.Valid {
+			result = sql.NullBool{Valid: true, Bool: attestationToUpdate.Result.Value}
+		}
+		comment := sql.NullString{}
+		if attestationToUpdate.Comment != "" {
+			comment = sql.NullString{Valid: true, String: attestationToUpdate.Comment}
+		}
+		err := apiCfg.DB.UpdateAttestationRow(r.Context(), db.UpdateAttestationRowParams{
+			ID:      attestationToUpdate.Id,
+			Result:  result,
+			Comment: comment,
+		})
+		if err != nil {
+			respondWithError(w, 400, "Attestation row not found")
+			return
+		}
+	}
+
+	respondWithJSON(w, 200, struct{}{})
+}

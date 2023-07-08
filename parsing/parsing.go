@@ -11,8 +11,8 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-// const value of classes, that we don't wan't to add
-var bannedClasses []string = []string{"Элективная физическая культура и спорт", "Иностранный язык: Русский язык как иностранный", "Модуль саморазвития (SoftSkills)", "Физика", "Высшая математика"}
+var include bool = false
+var bannedClasses []string = []string{"Элективная физическая культура и спорт", "Иностранный язык: Русский язык как иностранный", "Модуль саморазвития (SoftSkills)"}
 var classTypesToParse []string = []string{"Практика"}
 
 type FacultyParsed struct {
@@ -40,7 +40,15 @@ type ParsedTeacher struct {
 	Id   int32
 }
 
-func StartParsing(logChan *chan string, errorChan *chan error, dateToParse string) *[]*FacultyParsed {
+type Parameters struct {
+	Include  bool     `json:"include"`
+	Subjects []string `json:"subjects"`
+}
+
+func StartParsing(logChan *chan string, errorChan *chan error, dateToParse string, params Parameters) *[]*FacultyParsed {
+
+	include = params.Include
+	bannedClasses = params.Subjects
 
 	var facultiesWg sync.WaitGroup
 	facultyChannel := make(chan *FacultyParsed)
@@ -232,7 +240,7 @@ func parseGroupWeek(urlBase string, dateToParse string, classses *[]*Class, pars
 		}
 
 		className := safeString(element.Find(".lesson__subject").Children().Eq(2).Text())
-		if Contains(bannedClasses, className) {
+		if !include && Contains(bannedClasses, className) || include && !Contains(bannedClasses, className) {
 			return
 		}
 		if className == "" {

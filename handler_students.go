@@ -19,37 +19,30 @@ import (
 )
 
 func (apiCfg *apiConfig) uploadStudentsUpload(w http.ResponseWriter, r *http.Request, user db.User) {
-	logChan := make(chan string)
-	errorChan := make(chan error)
-
-	var errorCounter int
-
-	go logger.Logger(logChan)
-	go logger.ErrLogger(errorChan, &errorCounter)
 
 	err := r.ParseMultipartForm(10 << 20) // 10MB limit for file size
 
 	if err != nil {
-		errorChan <- fmt.Errorf("file is too big")
+		respondWithError(w, 400, "File is too big")
 		return
 	}
 
 	file, handler, err := r.FormFile("file")
 	if err != nil {
-		errorChan <- fmt.Errorf("error retrieving file")
+		respondWithError(w, 400, "Can't read file")
 		return
 	}
 	defer file.Close()
 
 	if handler.Header.Get("Content-Type") != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" {
-		errorChan <- fmt.Errorf("invalid file format: Only Excel files are allowed")
+		respondWithError(w, 400, "Not excel file")
 		return
 	}
 
 	// Create a temporary file to store the uploaded file
 	tempFile, err := os.CreateTemp("", "upload-*.xlsx")
 	if err != nil {
-		errorChan <- fmt.Errorf("eror creating temporary file")
+		respondWithError(w, 400, "Can't create temporary file on server...")
 		return
 	}
 	defer tempFile.Close()
@@ -57,13 +50,44 @@ func (apiCfg *apiConfig) uploadStudentsUpload(w http.ResponseWriter, r *http.Req
 	// Copy the uploaded file to the temporary file
 	_, err = io.Copy(tempFile, file)
 	if err != nil {
-		errorChan <- fmt.Errorf("eror copying file")
+		respondWithError(w, 400, "Error copying the file")
 		return
 	}
 
+	logChan := make(chan string)
+	errorChan := make(chan error)
+
+	var errorCounter int
+
+	go logger.Logger(logChan, GlobalWsConn, true)
+	go logger.ErrLogger(errorChan, &errorCounter, GlobalWsConn, true)
+
 	apiCfg.processExcelFile(tempFile, &logChan, &errorChan, &errorCounter)
 
-	respondWithJSON(w, 201, struct{}{})
+	logWGC := sync.WaitGroup{}
+	logWGC.Add(1)
+	go func() {
+		defer logWGC.Done()
+		close(logChan)
+	}()
+
+	errorWGC := sync.WaitGroup{}
+	errorWGC.Add(1)
+	go func() {
+		defer errorWGC.Done()
+		close(errorChan)
+	}()
+
+	logWGC.Wait()
+	errorWGC.Wait()
+
+	if errorCounter == 0 {
+		respondWithJSON(w, 201, struct{}{})
+	} else {
+		respondWithError(w, 400, "Something went wront, see the error log")
+	}
+
+	GlobalWsWg.Done()
 }
 
 type parsedStudent struct {
@@ -232,7 +256,7 @@ func (apiCfg *apiConfig) processExcelFile(file *os.File, logCh *chan string, err
 		}
 	}
 
-	*logCh <- "Data formed successfully"
+	*logCh <- fmt.Sprintf("Data formed successfully, adding %v students, updating %v students", len(usersToAdd), len(usersToUpdate))
 
 	err = apiCfg.DB.RemoveGroupID(context.Background())
 	if err != nil {

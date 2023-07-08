@@ -10,7 +10,6 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
 	db "github.com/guaNa228/attest/internal/database"
-	"github.com/guaNa228/attest/translit"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -54,8 +53,6 @@ func main() {
 
 	//go apiCfg.parsingResult()
 
-	fmt.Println(translit.ToLatin("Вишневская Татьяна Александровна", translit.RussianEmail))
-
 	router := chi.NewRouter()
 
 	router.Use(cors.Handler(
@@ -64,7 +61,7 @@ func main() {
 			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 			AllowedHeaders:   []string{"*"},
 			ExposedHeaders:   []string{"Link"},
-			AllowCredentials: false,
+			AllowCredentials: true,
 			MaxAge:           300,
 		},
 	))
@@ -77,9 +74,9 @@ func main() {
 
 	v1Router.Post("/user", apiCfg.middlewareAuth(apiCfg.handlerCreateUser, []string{}))
 
-	v1Router.Post("/login", apiCfg.handlerLogin)
+	v1Router.Post("/jwtCheck", apiCfg.middlewareAuth(apiCfg.handlerRoleByJWT, []string{"student", "teacher"}))
 
-	v1Router.Get("/test", apiCfg.middlewareAuth(apiCfg.handlerGetUser, []string{"teacher", "student"}))
+	v1Router.Post("/login", apiCfg.handlerLogin)
 
 	v1Router.Post("/group", apiCfg.middlewareAuth(apiCfg.handlerCreateGroup, []string{}))
 	v1Router.Delete("/group/{groupToDelete}", apiCfg.middlewareAuth(apiCfg.handlerDeleteGroup, []string{}))
@@ -87,11 +84,10 @@ func main() {
 	v1Router.Post("/class", apiCfg.middlewareAuth(apiCfg.handlerCreateClass, []string{}))
 	v1Router.Delete("/class/{classToDeleteID}", apiCfg.middlewareAuth(apiCfg.handlerDeleteClass, []string{}))
 
-	v1Router.Post("/semesterActivity", apiCfg.middlewareAuth(apiCfg.handlerCreateSemesterActivity, []string{}))
-	v1Router.Post("/semesterActivity/{semesterActivityToUpdateID}", apiCfg.middlewareAuth(apiCfg.handlerUpdateSemesterActivity, []string{}))
-	v1Router.Delete("/semesterActivity/{semesterActivityToDeleteID}", apiCfg.middlewareAuth(apiCfg.handlerDeleteSemesterActivity, []string{}))
+	v1Router.Post("/spawnAttestation", apiCfg.middlewareAuth(apiCfg.handleAttestationSpawn, []string{}))
 
-	//v1Router.Post("/attestation", apiCfg.middlewareAuth(apiCfg.handleAttestationSpawn, []string{}))
+	v1Router.Get("/attestation", apiCfg.middlewareAuth(apiCfg.handleAttestationGet, []string{"teacher", "student"}))
+	v1Router.Post("/attestation", apiCfg.middlewareAuth(apiCfg.handleAttestationPost, []string{"teacher"}))
 
 	v1Router.Post("/teacher", apiCfg.middlewareAuth(apiCfg.handlerCreateTeacher, []string{}))
 
@@ -99,7 +95,13 @@ func main() {
 
 	v1Router.Post("/students", apiCfg.middlewareAuth(apiCfg.uploadStudentsUpload, []string{}))
 
-	v1Router.Get("/", apiCfg.middlewareAuth(apiCfg.handleAttestationGet, []string{"teacher"}))
+	v1Router.Post("/parsing", apiCfg.middlewareAuth(apiCfg.handleParsing, []string{}))
+
+	v1Router.Post("/mails_parsing", apiCfg.middlewareAuth(apiCfg.handleEmailParsing, []string{}))
+
+	v1Router.Route("/", func(ws chi.Router) {
+		ws.Get("/ws", wsHandler)
+	})
 
 	router.Mount("/v1", v1Router)
 

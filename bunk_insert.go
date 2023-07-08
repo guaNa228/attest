@@ -18,7 +18,7 @@ var insertContextByTypes = map[string][]string{
 	"streams":     {"id", "created_at", "updated_at", "name", "code", "program"},
 	"classes":     {"id", "created_at", "updated_at", "name"},
 	"workloads":   {"id", "group_id", "class", "teacher"},
-	"attestation": {"id", "semester_activity_id", "student_id", "month", "result", "comment"},
+	"attestation": {"id", "workload", "student", "month", "result", "comment"},
 }
 
 func fillTypeData(v interface{}) ([]interface{}, error) {
@@ -35,8 +35,10 @@ func fillTypeData(v interface{}) ([]interface{}, error) {
 		return []interface{}{x.ID, x.GroupID, x.Class, x.Teacher}, nil
 	case userUpdatedGroup:
 		return []interface{}{x.ID, x.Group_id}, nil
+	case parsing.ParsedTeachersEmails:
+		return []interface{}{x.Id, x.Email}, nil
 	case db.Attestation:
-		return []interface{}{x.ID, x.SemesterActivityID, x.StudentID, x.Month, nil, nil}, nil
+		return []interface{}{x.ID, x.Workload, x.Student, x.Month, nil, nil}, nil
 	default:
 		return []interface{}{}, fmt.Errorf("unsupported type %t thrown for bunk creation", x)
 	}

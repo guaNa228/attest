@@ -12,16 +12,16 @@ import (
 )
 
 const getPreAttestationData = `-- name: GetPreAttestationData :many
-SELECT u.id as student_id,
-    sa.id as semester_activity_id
+SELECT u.id as student,
+    w.id as workload
 FROM users u,
-    semester_activity sa
-WHERE u.group_id = sa.group_id
+    workloads w
+WHERE u.group_id = w.group_id
 `
 
 type GetPreAttestationDataRow struct {
-	StudentID          uuid.UUID
-	SemesterActivityID uuid.UUID
+	Student  uuid.UUID
+	Workload uuid.UUID
 }
 
 func (q *Queries) GetPreAttestationData(ctx context.Context) ([]GetPreAttestationDataRow, error) {
@@ -33,7 +33,7 @@ func (q *Queries) GetPreAttestationData(ctx context.Context) ([]GetPreAttestatio
 	var items []GetPreAttestationDataRow
 	for rows.Next() {
 		var i GetPreAttestationDataRow
-		if err := rows.Scan(&i.StudentID, &i.SemesterActivityID); err != nil {
+		if err := rows.Scan(&i.Student, &i.Workload); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -47,37 +47,45 @@ func (q *Queries) GetPreAttestationData(ctx context.Context) ([]GetPreAttestatio
 	return items, nil
 }
 
+
 const getAttestationData = `-- name: GetAttestationData :many
 SELECT a.id,
     u.name student,
-    g.code,
+	s.code,
+	s.name,
+    g.subcode,
     c.name class,
     a.result,
     a.month,
     a.comment
-FROM semester_activity sa,
+FROM  workloads w,
     attestation a,
     users u,
     groups g,
-    classes c
-WHERE sa.teacher_id = $1
-    and a.student_id = u.id
-    and g.id = sa.group_id
-    and c.id = sa.class_id
+    classes c,
+	streams s
+WHERE w.teacher = $1
+	and a.workload=w.id
+    and a.student = u.id
+    and g.id = w.group_id
+	and g.stream = s.id
+    and c.id = w.class
 `
 
 type GetAttestationDataRow struct {
-	ID      uuid.UUID `json:"id"`
-	Student string `json:"student"`
-	Code    string `json:"group"`
-	Class   string `json:"class"`
-	Result  sql.NullBool `json:"result"`
-	Month   MonthEnum `json:"month"`
-	Comment sql.NullString `json:"comment"`
+	ID      uuid.UUID
+	Student string
+	Code    string
+	Name    string
+	Subcode string
+	Class   string
+	Result  sql.NullBool
+	Month   MonthEnum
+	Comment sql.NullString
 }
 
-func (q *Queries) GetAttestationData(ctx context.Context, teacherID uuid.UUID) ([]GetAttestationDataRow, error) {
-	rows, err := q.db.QueryContext(ctx, getAttestationData, teacherID)
+func (q *Queries) GetAttestationData(ctx context.Context, teacher uuid.UUID) ([]GetAttestationDataRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAttestationData, teacher)
 	if err != nil {
 		return nil, err
 	}
@@ -89,6 +97,74 @@ func (q *Queries) GetAttestationData(ctx context.Context, teacherID uuid.UUID) (
 			&i.ID,
 			&i.Student,
 			&i.Code,
+			&i.Name,
+			&i.Subcode,
+			&i.Class,
+			&i.Result,
+			&i.Month,
+			&i.Comment,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateAttestationRow = `-- name: UpdateAttestationRow :exec
+UPDATE attestation
+SET result = $2,
+    comment = $3
+WHERE id = $1
+`
+
+type UpdateAttestationRowParams struct {
+	ID      uuid.UUID
+	Result  sql.NullBool
+	Comment sql.NullString
+}
+
+func (q *Queries) UpdateAttestationRow(ctx context.Context, arg UpdateAttestationRowParams) error {
+	_, err := q.db.ExecContext(ctx, updateAttestationRow, arg.ID, arg.Result, arg.Comment)
+	return err
+}
+
+const getStudentsAttestationData = `-- name: GetStudentsAttestationData :many
+SELECT c.name class,
+    a.result,
+    a.month,
+    a.comment
+FROM attestation a,
+    workloads w,
+    classes c
+WHERE a.student = $1
+    and a.workload = w.id
+    and w.class = c.id
+`
+
+type GetStudentsAttestationDataRow struct {
+	Class   string
+	Result  sql.NullBool
+	Month   MonthEnum
+	Comment sql.NullString
+}
+
+func (q *Queries) GetStudentsAttestationData(ctx context.Context, student uuid.UUID) ([]GetStudentsAttestationDataRow, error) {
+	rows, err := q.db.QueryContext(ctx, getStudentsAttestationData, student)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetStudentsAttestationDataRow
+	for rows.Next() {
+		var i GetStudentsAttestationDataRow
+		if err := rows.Scan(
 			&i.Class,
 			&i.Result,
 			&i.Month,
