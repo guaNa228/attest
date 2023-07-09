@@ -100,6 +100,11 @@ type userUpdatedGroup struct {
 	Group_id uuid.UUID
 }
 
+type userUpdatedUpdatedAt struct {
+	ID        uuid.UUID
+	UpdatedAt time.Time
+}
+
 type EmailGroup struct {
 	group string
 	email string
@@ -204,6 +209,7 @@ func (apiCfg *apiConfig) processExcelFile(file *os.File, logCh *chan string, err
 
 	usersToAdd := []*db.User{}
 	usersToUpdate := []*userUpdatedGroup{}
+	updatedAtToUpdate := []*userUpdatedUpdatedAt{}
 
 	for group, students := range groupStudents {
 		groupSplitted := strings.Split(group, "/")
@@ -243,6 +249,10 @@ func (apiCfg *apiConfig) processExcelFile(file *os.File, logCh *chan string, err
 						Group_id: groupId,
 						ID:       studentId,
 					})
+					updatedAtToUpdate = append(updatedAtToUpdate, &userUpdatedUpdatedAt{
+						ID:        studentId,
+						UpdatedAt: time.Now(),
+					})
 				}
 			} else {
 				newUserInstance, err := apiCfg.createStudentInstance(student.name, student.email, groupId)
@@ -274,6 +284,9 @@ func (apiCfg *apiConfig) processExcelFile(file *os.File, logCh *chan string, err
 	actionsWg.Add(1)
 	go itemsBunkUpdate[userUpdatedGroup](usersToUpdate, "users", "group_id", "id", &actionsWg, errCh, errCount)
 
+	actionsWg.Add(1)
+	go itemsBunkUpdate[userUpdatedUpdatedAt](updatedAtToUpdate, "users", "updated_at", "id", &actionsWg, errCh, errCount)
+
 	actionsWg.Wait()
 
 	os.Remove(file.Name())
@@ -284,6 +297,66 @@ func (apiCfg *apiConfig) processExcelFile(file *os.File, logCh *chan string, err
 	}
 
 	*logCh <- "Succesfully filled groups with students, operation passed clear"
+}
+
+func (apiCfg *apiConfig) handlerGetExcelFile(w http.ResponseWriter, r *http.Request, user db.User) {
+	studentsData, err := apiCfg.DB.GetFileData(r.Context())
+	if err != nil {
+		respondWithError(w, 500, "Error creating file")
+		return
+	}
+
+	sheetName := "Лист1"
+
+	f := excelize.NewFile()
+
+	err = f.SetSheetName("Sheet1", sheetName)
+	if err != nil {
+		respondWithError(w, 500, "Error deleting default sheet")
+		return
+	}
+
+	f.SetActiveSheet(0)
+
+	errColA := f.SetColWidth(sheetName, "A", "A", 15)
+	errColB := f.SetColWidth(sheetName, "B", "B", 40)
+	errColC := f.SetColWidth(sheetName, "C", "C", 30)
+
+	if errColA != nil || errColB != nil || errColC != nil {
+		respondWithError(w, 500, "Error customizing file structure")
+		return
+	}
+
+	currentGroupCode := ""
+	rowIndex := 1
+	for _, studentRow := range studentsData {
+		if currentGroupCode != studentRow.Code {
+			currentGroupCode = studentRow.Code
+			err = f.SetSheetRow(sheetName, fmt.Sprintf("A%v", rowIndex), &[]interface{}{currentGroupCode, studentRow.Stream})
+			if err != nil {
+				respondWithError(w, 500, fmt.Sprintf("Error filling sheet with group data at row %v: %s", rowIndex, err.Error()))
+				return
+			}
+			rowIndex++
+		}
+
+		err = f.SetSheetRow(sheetName, fmt.Sprintf("B%v", rowIndex), &[]interface{}{studentRow.Name, studentRow.Email.String})
+
+		if err != nil {
+			respondWithError(w, 500, fmt.Sprintf("Error filling sheet with students data at row %v: %s", rowIndex, err.Error()))
+			return
+		}
+
+		rowIndex++
+	}
+
+	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	w.Header().Set("Content-Disposition", "attachment; filename=students.xlsx")
+
+	err = f.Write(w)
+	if err != nil {
+		respondWithError(w, 500, "Error generating file")
+	}
 }
 
 func (apiCfg *apiConfig) createStudentInstance(name string, email string, group uuid.UUID) (db.User, error) {

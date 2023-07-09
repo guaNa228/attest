@@ -10,28 +10,24 @@ SELECT u.id as student,
 FROM users u,
     workloads w
 WHERE u.group_id = w.group_id;
--- name: GetAttestationData :many
-SELECT a.id,
-    u.name student,
-    s.code,
+-- name: GetTeachersAttestationData :many
+SELECT w.id,
+    s.code || '/' || g.subcode as "group_code",
     s.name,
-    g.subcode,
-    c.name class,
-    a.result,
-    a.month,
-    a.comment
+    c.name class
 FROM workloads w,
-    attestation a,
-    users u,
     groups g,
     classes c,
     streams s
 WHERE w.teacher = $1
-    and a.workload = w.id
-    and a.student = u.id
     and g.id = w.group_id
     and g.stream = s.id
-    and c.id = w.class;
+    and c.id = w.class
+    and (
+        SELECT COUNT(*)
+        from users
+        where group_id = g.id
+    ) > 0;
 -- name: UpdateAttestationRow :exec
 UPDATE attestation
 SET result = $2,
@@ -57,3 +53,15 @@ WHERE a.student = $1
 -- name: ClearAttestation :exec
 DELETE from attestation
 where month = $1;
+-- name: GetWorkloadAttestationData :many
+SELECT a.id,
+    u.name,
+    a.month,
+    a.result,
+    a.comment
+from attestation a,
+    workloads w,
+    users u
+WHERE w.id = $1
+    and a.workload = w.id
+    and u.id = a.student;

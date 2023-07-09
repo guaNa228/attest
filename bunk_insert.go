@@ -36,6 +36,8 @@ func fillTypeData(v interface{}) ([]interface{}, error) {
 		return []interface{}{x.ID, x.GroupID, x.Class, x.Teacher}, nil
 	case userUpdatedGroup:
 		return []interface{}{x.ID, x.Group_id}, nil
+	case userUpdatedUpdatedAt:
+		return []interface{}{x.ID, x.UpdatedAt}, nil
 	case parsing.ParsedTeachersEmails:
 		return []interface{}{x.Id, x.Email}, nil
 	case db.Attestation:
@@ -264,9 +266,6 @@ func itemsBunkUpdate[T any](items []*T, typeTitle string, fieldToUpdate string, 
 				caseStrings = append(caseStrings, fmt.Sprintf("WHEN %s=$%v THEN $%v", fieldToIdentificate, itemIndex*2+1, itemIndex*2+2))
 				valueArgs = append(valueArgs, values...)
 			}
-
-			fmt.Println(valueArgs...)
-			//log.Println(fmt.Sprintf("UPDATE %s SET %s = (CASE %s ELSE %s)", typeTitle, fieldToUpdate, strings.Join(caseStrings, "\n"), fieldToUpdate))
 
 			stmt, err := tx.Prepare(fmt.Sprintf("UPDATE %s SET %s = (CASE %s ELSE %s END)", typeTitle, fieldToUpdate, strings.Join(caseStrings, "\n"), fieldToUpdate))
 			if err != nil {

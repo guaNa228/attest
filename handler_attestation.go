@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"sync"
 
+	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 	db "github.com/guaNa228/attest/internal/database"
 	"github.com/guaNa228/attest/logger"
@@ -77,7 +77,7 @@ func (apiCfg *apiConfig) handleAttestationSpawn(w http.ResponseWriter, r *http.R
 
 func (apiCfg *apiConfig) handleAttestationGet(w http.ResponseWriter, r *http.Request, user db.User) {
 	if user.Role == "teacher" {
-		attestationData, err := apiCfg.DB.GetAttestationData(r.Context(), user.ID)
+		attestationData, err := apiCfg.DB.GetTeachersAttestationData(r.Context(), user.ID)
 
 		if err != nil {
 			respondWithError(w, 400, fmt.Sprintf("Couldn't get attestation data: %v", err))
@@ -101,33 +101,28 @@ func (apiCfg *apiConfig) handleAttestationGet(w http.ResponseWriter, r *http.Req
 	respondWithError(w, 403, "You are not allowed here")
 }
 
-type NullableBool struct {
-	Valid bool
-	Value bool
-}
-
-func (nb *NullableBool) UnmarshalJSON(data []byte) error {
-	if string(data) == "null" {
-		*nb = NullableBool{Valid: false, Value: false}
-		return nil
-	} else {
-		if string(data) == "true" {
-			*nb = NullableBool{Valid: true, Value: true}
-			return nil
-		} else if string(data) == "false" {
-			*nb = NullableBool{Valid: false, Value: true}
-			return nil
-		} else {
-			return errors.New("unknown type passed into result")
-		}
+func (apiCfg *apiConfig) handleGetAttestationByWorkload(w http.ResponseWriter, r *http.Request, user db.User) {
+	workloadId := chi.URLParam(r, "id")
+	workloadUUID, err := uuid.Parse(workloadId)
+	if err != nil {
+		respondWithError(w, 400, "Broken id")
+		return
 	}
+
+	attestationData, err := apiCfg.DB.GetWorkloadAttestationData(r.Context(), workloadUUID)
+	if err != nil {
+		respondWithError(w, 400, "Unknown workload id")
+		return
+	}
+
+	respondWithJSON(w, 200, attestationData)
 }
 
 func (apiCfg *apiConfig) handleAttestationPost(w http.ResponseWriter, r *http.Request, user db.User) {
 	type attestationUnit struct {
-		Id      uuid.UUID    `json:"id"`
-		Result  NullableBool `json:"result"`
-		Comment string       `json:"comment"`
+		Id      uuid.UUID `json:"id"`
+		Result  string    `json:"result"`
+		Comment string    `json:"comment"`
 	}
 
 	type parameters struct {
@@ -145,8 +140,15 @@ func (apiCfg *apiConfig) handleAttestationPost(w http.ResponseWriter, r *http.Re
 
 	for _, attestationToUpdate := range params.Data {
 		result := sql.NullBool{}
-		if attestationToUpdate.Result.Valid {
-			result = sql.NullBool{Valid: true, Bool: attestationToUpdate.Result.Value}
+		if attestationToUpdate.Result == "true" {
+			result = sql.NullBool{Valid: true, Bool: true}
+		} else if attestationToUpdate.Result == "false" {
+			result = sql.NullBool{Valid: true, Bool: false}
+		} else if attestationToUpdate.Result == "null" {
+			result = sql.NullBool{Valid: false, Bool: false}
+		} else {
+			respondWithError(w, 400, "Error parsing JSON: wrong result value")
+			return
 		}
 		comment := sql.NullString{}
 		if attestationToUpdate.Comment != "" {

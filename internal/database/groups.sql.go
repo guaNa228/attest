@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"database/sql"
 )
 
 const createGroup = `-- name: CreateGroup :one
@@ -102,4 +103,54 @@ func (q *Queries) GetGroupByFullCode(ctx context.Context, arg GetGroupByFullCode
 	var id uuid.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const getFileData = `-- name: GetFileData :many
+SELECT a.code, a.stream, a.name, a.email 
+from (SELECT s.code || '/' || g.subcode as code,
+	s.name as stream,
+    u.name,
+	u.email
+from users u,
+    groups g,
+    streams s
+where u.role = 'student'
+    and u.group_id = g.id
+    and g.stream = s.id) a
+group by a.stream, a.code, (a.name, a.email)
+`
+
+type GetFileDataRow struct {
+	Code   string
+	Stream string
+	Name   string
+	Email  sql.NullString
+}
+
+func (q *Queries) GetFileData(ctx context.Context) ([]GetFileDataRow, error) {
+	rows, err := q.db.QueryContext(ctx, getFileData)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetFileDataRow
+	for rows.Next() {
+		var i GetFileDataRow
+		if err := rows.Scan(
+			&i.Code,
+			&i.Stream,
+			&i.Name,
+			&i.Email,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

@@ -89,6 +89,7 @@ func main() {
 	v1Router.Post("/clearAttestation", apiCfg.middlewareAuth(apiCfg.handleAttestationClear, []string{}))
 
 	v1Router.Get("/attestation", apiCfg.middlewareAuth(apiCfg.handleAttestationGet, []string{"teacher", "student"}))
+	v1Router.Get("/workload_attestation/{id}", apiCfg.middlewareAuth(apiCfg.handleGetAttestationByWorkload, []string{"teacher"}))
 	v1Router.Post("/attestation", apiCfg.middlewareAuth(apiCfg.handleAttestationPost, []string{"teacher"}))
 
 	v1Router.Post("/teacher", apiCfg.middlewareAuth(apiCfg.handlerCreateTeacher, []string{}))
@@ -96,6 +97,7 @@ func main() {
 	v1Router.Post("/student", apiCfg.middlewareAuth(apiCfg.handlerCreateStudent, []string{}))
 
 	v1Router.Post("/students", apiCfg.middlewareAuth(apiCfg.uploadStudentsUpload, []string{}))
+	v1Router.Get("/students", apiCfg.middlewareAuth(apiCfg.handlerGetExcelFile, []string{}))
 
 	v1Router.Post("/parsing", apiCfg.middlewareAuth(apiCfg.handleParsing, []string{}))
 
