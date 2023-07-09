@@ -1,8 +1,11 @@
 package main
 
 import (
+	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 
 	db "github.com/guaNa228/attest/internal/database"
@@ -54,4 +57,61 @@ func (apiCfg *apiConfig) handleEmailParsing(w http.ResponseWriter, r *http.Reque
 	}
 
 	GlobalWsWg.Done()
+}
+
+func (apiCfg *apiConfig) handleGetEmails(w http.ResponseWriter, r *http.Request, user db.User) {
+	emails, err := apiCfg.DB.GetTeachersEmails(r.Context())
+	if err != nil {
+		respondWithError(w, 400, fmt.Sprintf("Unable to get teachers data: %s", err.Error()))
+		return
+	}
+
+	respondWithJSON(w, 200, emails)
+}
+
+func (apiCfg *apiConfig) handleGetStudentsEmails(w http.ResponseWriter, r *http.Request, user db.User) {
+	emails, err := apiCfg.DB.GetUsersEmails(r.Context())
+	if err != nil {
+		respondWithError(w, 400, fmt.Sprintf("Unable to get students data: %s", err.Error()))
+		return
+	}
+	respondWithJSON(w, 200, emails)
+}
+
+func (apiCfg *apiConfig) handlerUpdateMails(w http.ResponseWriter, r *http.Request, user db.User) {
+
+	type parameters struct {
+		Mails []parsing.ParsedTeachersEmails `json:"mails"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		respondWithError(w, 400, fmt.Sprintf("Error parsing JSON: %v", err))
+		return
+	}
+
+	failedEmails := []string{}
+
+	for _, emailUnit := range params.Mails {
+		err := apiCfg.DB.UpdateEmail(r.Context(), db.UpdateEmailParams{
+			ID: emailUnit.Id,
+			Email: sql.NullString{
+				Valid:  true,
+				String: emailUnit.Email,
+			},
+		})
+
+		if err != nil {
+			failedEmails = append(failedEmails, emailUnit.Email)
+		}
+
+	}
+
+	if len(failedEmails) == 0 {
+		respondWithJSON(w, 200, "All emails are added")
+	} else {
+		respondWithError(w, 400, fmt.Sprintf("Following emails are not added: %s", strings.Join(failedEmails, ",")))
+	}
 }

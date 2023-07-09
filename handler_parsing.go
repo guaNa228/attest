@@ -42,7 +42,7 @@ func (apiCfg *apiConfig) parsingResult(params parsing.Parameters, errCounter *in
 	go logger.Logger(logChan, GlobalWsConn, true)
 	go logger.ErrLogger(errorChan, errCounter, GlobalWsConn, true)
 
-	resultOfParsing := parsing.StartParsing(&logChan, &errorChan, "2023-03-01", params)
+	resultOfParsing := parsing.StartParsing(&logChan, &errorChan, params)
 
 	dbInstances, err := apiCfg.parsingResultToDBInstances(resultOfParsing)
 	if err != nil {

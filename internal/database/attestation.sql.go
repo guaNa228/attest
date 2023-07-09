@@ -182,3 +182,13 @@ func (q *Queries) GetStudentsAttestationData(ctx context.Context, student uuid.U
 	}
 	return items, nil
 }
+
+const clearAttestation = `-- name: ClearAttestation :exec
+DELETE from attestation
+where month = $1
+`
+
+func (q *Queries) ClearAttestation(ctx context.Context, month MonthEnum) error {
+	_, err := q.db.ExecContext(ctx, clearAttestation, month)
+	return err
+}

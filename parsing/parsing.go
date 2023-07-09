@@ -43,9 +43,10 @@ type ParsedTeacher struct {
 type Parameters struct {
 	Include  bool     `json:"include"`
 	Subjects []string `json:"subjects"`
+	Date     string   `json:"date"`
 }
 
-func StartParsing(logChan *chan string, errorChan *chan error, dateToParse string, params Parameters) *[]*FacultyParsed {
+func StartParsing(logChan *chan string, errorChan *chan error, params Parameters) *[]*FacultyParsed {
 
 	include = params.Include
 	bannedClasses = params.Subjects
@@ -56,7 +57,7 @@ func StartParsing(logChan *chan string, errorChan *chan error, dateToParse strin
 	go parsedFacultiesChannelRead(&facultiesToReturn, facultyChannel)
 
 	facultiesWg.Add(1)
-	go ParseFaculty("https://ruz.spbstu.ru/faculty/95/groups", logChan, errorChan, &facultiesWg, facultyChannel, dateToParse)
+	go ParseFaculty("https://ruz.spbstu.ru/faculty/95/groups", logChan, errorChan, &facultiesWg, facultyChannel, params.Date)
 
 	facultiesWg.Wait()
 

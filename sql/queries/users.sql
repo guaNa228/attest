@@ -91,3 +91,48 @@ select id,
 from users
 where email is not null
     and email_sent = false;
+-- name: GetTeachersEmails :many
+select id,
+    name,
+    teacher_id,
+    email
+from users
+where role = 'teacher'
+order by email nulls first;
+-- name: GetTeachersEmails :many
+select id,
+    name,
+    teacher_id,
+    email
+from users
+where role = 'teacher'
+order by email nulls first;
+-- name: GetUsersEmails :many
+select u.id,
+    u.name,
+    s.code || '/' || g.subcode,
+    u.email
+from users u,
+    streams s,
+    groups g
+where u.role = 'student'
+    and u.group_id is not null
+    and u.group_id = g.id
+    and g.stream = g.id
+order by email nulls first;
+-- name: GetUsersEmails :many
+select u.id,
+    u.name,
+    s.code || '/' || g.subcode "group_code",
+    u.email
+from users u,
+    groups g,
+    streams s
+where u.role = 'student'
+    and u.group_id = g.id
+    and g.stream = s.id
+order by u.email nulls first;
+-- name: UpdateEmail :exec
+update users
+set email = $2
+where id = $1;

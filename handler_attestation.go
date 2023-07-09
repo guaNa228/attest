@@ -70,7 +70,7 @@ func (apiCfg *apiConfig) handleAttestationSpawn(w http.ResponseWriter, r *http.R
 	if errorCounter == 0 {
 		respondWithJSON(w, 200, struct{}{})
 	} else {
-		respondWithError(w, 500, "Something went wrong")
+		respondWithError(w, 400, fmt.Sprintf("Аттестация за %s уже была начата", params.MonthEnum))
 	}
 
 }
@@ -138,9 +138,7 @@ func (apiCfg *apiConfig) handleAttestationPost(w http.ResponseWriter, r *http.Re
 	params := parameters{}
 	err := decoder.Decode(&params)
 
-	fmt.Println(params)
 	if err != nil {
-		fmt.Println(1)
 		respondWithError(w, 400, fmt.Sprintf("Error parsing JSON: %v", err))
 		return
 	}
@@ -166,4 +164,27 @@ func (apiCfg *apiConfig) handleAttestationPost(w http.ResponseWriter, r *http.Re
 	}
 
 	respondWithJSON(w, 200, struct{}{})
+}
+
+func (apiCfg *apiConfig) handleAttestationClear(w http.ResponseWriter, r *http.Request, user db.User) {
+	type parameters struct {
+		Month db.MonthEnum `json:"month"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err := decoder.Decode(&params)
+
+	if err != nil {
+		respondWithError(w, 400, fmt.Sprintf("Error parsing JSON: %v", err))
+		return
+	}
+
+	err = apiCfg.DB.ClearAttestation(r.Context(), params.Month)
+
+	if err != nil {
+		respondWithError(w, 400, fmt.Sprintf("Error clearing atestation data for %s", params.Month))
+	} else {
+		respondWithJSON(w, 200, struct{}{})
+	}
 }

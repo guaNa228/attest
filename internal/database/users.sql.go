@@ -351,3 +351,114 @@ func (q *Queries) GetUsersWithEmails(ctx context.Context) ([]GetUsersWithEmailsR
 	return items, nil
 }
 
+const getTeachersEmails = `-- name: GetTeachersEmails :many
+select id,
+    name,
+    teacher_id,
+    email
+from users
+where role='teacher'
+order by email nulls first
+`
+
+type GetTeachersEmailsRow struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string `json:"name"`
+	TeacherID sql.NullInt32 `json:"teacher_id"`
+	Email     sql.NullString `json:"email"`
+}
+
+func (q *Queries) GetTeachersEmails(ctx context.Context) ([]GetTeachersEmailsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getTeachersEmails)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTeachersEmailsRow
+	for rows.Next() {
+		var i GetTeachersEmailsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.TeacherID,
+			&i.Email,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUsersEmails = `-- name: GetUsersEmails :many
+select u.id,
+    u.name,
+    s.code || '/' || g.subcode "group_code",
+    u.email
+from users u,
+	groups g,
+    streams s
+where u.role = 'student'
+    and u.group_id = g.id
+	and g.stream=s.id
+order by u.email nulls first
+`
+
+type GetUsersEmailsRow struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string `json:"name"`
+	GroupCode string `json:"group_name"`
+	Email     sql.NullString `json:"email"`
+}
+
+func (q *Queries) GetUsersEmails(ctx context.Context) ([]GetUsersEmailsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getUsersEmails)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUsersEmailsRow
+	for rows.Next() {
+		var i GetUsersEmailsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.GroupCode,
+			&i.Email,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateEmail = `-- name: UpdateEmail :exec
+update users
+set email = $2
+where id = $1
+`
+
+type UpdateEmailParams struct {
+	ID    uuid.UUID
+	Email sql.NullString
+}
+
+func (q *Queries) UpdateEmail(ctx context.Context, arg UpdateEmailParams) error {
+	_, err := q.db.ExecContext(ctx, updateEmail, arg.ID, arg.Email)
+	return err
+}
+
+

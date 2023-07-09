@@ -86,6 +86,8 @@ func main() {
 
 	v1Router.Post("/spawnAttestation", apiCfg.middlewareAuth(apiCfg.handleAttestationSpawn, []string{}))
 
+	v1Router.Post("/clearAttestation", apiCfg.middlewareAuth(apiCfg.handleAttestationClear, []string{}))
+
 	v1Router.Get("/attestation", apiCfg.middlewareAuth(apiCfg.handleAttestationGet, []string{"teacher", "student"}))
 	v1Router.Post("/attestation", apiCfg.middlewareAuth(apiCfg.handleAttestationPost, []string{"teacher"}))
 
@@ -100,6 +102,10 @@ func main() {
 	v1Router.Post("/mails_parsing", apiCfg.middlewareAuth(apiCfg.handleEmailParsing, []string{}))
 
 	v1Router.Post("/mails_send", apiCfg.middlewareAuth(apiCfg.handleEmailSending, []string{}))
+
+	v1Router.Get("/teacher_mails", apiCfg.middlewareAuth(apiCfg.handleGetEmails, []string{}))
+	v1Router.Get("/students_mails", apiCfg.middlewareAuth(apiCfg.handleGetStudentsEmails, []string{}))
+	v1Router.Post("/update_mails", apiCfg.middlewareAuth(apiCfg.handlerUpdateMails, []string{}))
 
 	v1Router.Route("/", func(ws chi.Router) {
 		ws.Get("/ws", wsHandler)

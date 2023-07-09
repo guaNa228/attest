@@ -24,8 +24,8 @@ func (apiCfg *apiConfig) handleEmailSending(w http.ResponseWriter, r *http.Reque
 
 	readingWg := sync.WaitGroup{}
 
-	go logger.Logger(logChan, GlobalWsConn, false)
-	go logger.ErrLogger(errorChan, &errorCounter, GlobalWsConn, false)
+	go logger.Logger(logChan, GlobalWsConn, true)
+	go logger.ErrLogger(errorChan, &errorCounter, GlobalWsConn, true)
 	go parsing.ReadChannelDataWithWG(&usersWithSuccessfullySentEmails, &usersToUpdateChan, &readingWg)
 
 	dialer := gomail.Dialer{
@@ -49,7 +49,6 @@ func (apiCfg *apiConfig) handleEmailSending(w http.ResponseWriter, r *http.Reque
 
 	for _, user := range dbGetUsersToSend {
 		if user.Email.String == "frolov.go@edu.spbstu.ru" {
-			fmt.Println(user.Email.String)
 			sendingWg.Add(1)
 			go sendEmail(user, &logChan, &usersToUpdateChan, &sendingWg, &dialer, &readingWg)
 		}
@@ -100,7 +99,7 @@ func (apiCfg *apiConfig) handleEmailSending(w http.ResponseWriter, r *http.Reque
 		respondWithJSON(w, 201, struct{}{})
 	}
 
-	//GlobalWsWg.Done()
+	GlobalWsWg.Done()
 }
 
 func sendEmail(recipient db.GetUsersWithEmailsRow, logChan *chan string, dataCh *chan *uuid.UUID, outerWg *sync.WaitGroup, dialer *gomail.Dialer, readingWg *sync.WaitGroup) {

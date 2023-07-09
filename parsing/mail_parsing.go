@@ -13,8 +13,8 @@ import (
 )
 
 type ParsedTeachersEmails struct {
-	Id    uuid.UUID
-	Email string
+	Id    uuid.UUID `json:"id"`
+	Email string    `json:"email"`
 }
 
 var facultyPrefixes = []string{"icst", "physics", "hmath", "hum", "ic"}

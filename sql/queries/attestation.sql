@@ -54,3 +54,6 @@ FROM attestation a,
 WHERE a.student = $1
     and a.workload = w.id
     and w.class = c.id;
+-- name: ClearAttestation :exec
+DELETE from attestation
+where month = $1;
