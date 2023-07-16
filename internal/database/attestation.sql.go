@@ -226,3 +226,111 @@ func (q *Queries) GetWorkloadAttestationData(ctx context.Context, id uuid.UUID) 
 	}
 	return items, nil
 }
+
+const getUnderachieversData = `-- name: GetUnderachieversData :many
+SELECT u.name student,
+    c.name class,
+    attestation.result res,
+    s.code || '/' || g.subcode group_code
+from (SELECT student id
+                from attestation a,
+                    workloads w,
+                    groups g
+                where a.workload = w.id
+                    and w.group_id = g.id
+                    and g.stream = $1
+                    and a.result < $2
+                    and a.month = $4
+                group by a.student
+				HAVING COUNT(*)>=$3) st,
+    workloads w,
+    users u,
+    classes c,
+    groups g,
+    streams s,
+	attestation
+where attestation.student = st.id
+    and u.id = st.id
+    and attestation.workload = w.id
+    and w.class = c.id
+    and w.group_id = g.id
+    and g.stream = s.id
+    and attestation.result < $2
+order by s.code, u.name, c.name
+`
+
+type GetUnderachieversDataParams struct {
+	Stream  uuid.UUID
+	Result  sql.NullInt32
+	MinScore int
+	Month   MonthEnum
+}
+
+type GetUnderachieversDataRow struct {
+	Student   string
+	Class     string
+	Res       sql.NullInt32
+	GroupCode string
+}
+
+
+func (q *Queries) GetUnderachieversData(ctx context.Context, arg GetUnderachieversDataParams) ([]GetUnderachieversDataRow, error) {
+	rows, err := q.db.QueryContext(ctx, getUnderachieversData,
+		arg.Stream,
+		arg.Result,
+		arg.MinScore,
+		arg.Month,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUnderachieversDataRow
+	for rows.Next() {
+		var i GetUnderachieversDataRow
+		if err := rows.Scan(
+			&i.Student,
+			&i.Class,
+			&i.Res,
+			&i.GroupCode,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getOpenedMonths = `-- name: GetOpenedMonths :many
+SELECT DISTINCT month
+from attestation
+`
+
+func (q *Queries) GetOpenedMonths(ctx context.Context) ([]MonthEnum, error) {
+	rows, err := q.db.QueryContext(ctx, getOpenedMonths)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []MonthEnum
+	for rows.Next() {
+		var month MonthEnum
+		if err := rows.Scan(&month); err != nil {
+			return nil, err
+		}
+		items = append(items, month)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

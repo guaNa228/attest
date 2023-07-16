@@ -51,8 +51,6 @@ func main() {
 		fmt.Println("Programs are succesfully intialized!")
 	}
 
-	//go apiCfg.parsingResult()
-
 	router := chi.NewRouter()
 
 	router.Use(cors.Handler(
@@ -91,6 +89,9 @@ func main() {
 	v1Router.Get("/attestation", apiCfg.middlewareAuth(apiCfg.handleAttestationGet, []string{"teacher", "student"}))
 	v1Router.Get("/workload_attestation/{id}", apiCfg.middlewareAuth(apiCfg.handleGetAttestationByWorkload, []string{"teacher"}))
 	v1Router.Post("/attestation", apiCfg.middlewareAuth(apiCfg.handleAttestationPost, []string{"teacher"}))
+
+	v1Router.Get("/underachievers", apiCfg.middlewareAuth(apiCfg.handlerGetStreams, []string{}))
+	v1Router.Post("/underachievers", apiCfg.middlewareAuth(apiCfg.handleGetUnderachievers, []string{}))
 
 	v1Router.Post("/teacher", apiCfg.middlewareAuth(apiCfg.handlerCreateTeacher, []string{}))
 

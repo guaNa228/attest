@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	db "github.com/guaNa228/attest/internal/database"
 	"github.com/guaNa228/attest/logger"
+	"github.com/xuri/excelize/v2"
 )
 
 func (apiCfg *apiConfig) handleAttestationSpawn(w http.ResponseWriter, r *http.Request, user db.User) {
@@ -193,5 +194,104 @@ func (apiCfg *apiConfig) handleAttestationClear(w http.ResponseWriter, r *http.R
 		respondWithError(w, 400, fmt.Sprintf("Error clearing atestation data for %s", params.Month))
 	} else {
 		respondWithJSON(w, 200, struct{}{})
+	}
+}
+
+func (apiCfg *apiConfig) handleGetUnderachievers(w http.ResponseWriter, r *http.Request, user db.User) {
+	type parameters struct {
+		StreamID uuid.UUID    `json:"stream"`
+		Score    int          `json:"score"`
+		Classes  int          `json:"classes"`
+		Month    db.MonthEnum `json:"month"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err := decoder.Decode(&params)
+
+	if err != nil {
+		respondWithError(w, 400, fmt.Sprintf("Error parsing JSON: %v", err))
+		return
+	}
+
+	underachieversData, err := apiCfg.DB.GetUnderachieversData(r.Context(), db.GetUnderachieversDataParams{
+		Stream:   params.StreamID,
+		Result:   sql.NullInt32{Valid: true, Int32: int32(params.Score)},
+		MinScore: params.Classes,
+		Month:    params.Month,
+	})
+
+	if err != nil {
+		respondWithError(w, 400, fmt.Sprintf("Unable to get underachievers data: %v", err))
+		return
+	}
+
+	if len(underachieversData) == 0 {
+		respondWithError(w, 400, "Отсутствуют студенты, соответствующие требованиям")
+		return
+	}
+
+	sheetName, _ := apiCfg.DB.GetStreamByID(r.Context(), params.StreamID)
+
+	f := excelize.NewFile()
+
+	err = f.SetSheetName("Sheet1", sheetName)
+	if err != nil {
+		respondWithError(w, 500, "Error deleting default sheet")
+		return
+	}
+
+	f.SetActiveSheet(0)
+
+	errColA := f.SetColWidth(sheetName, "A", "A", 15)
+	errColB := f.SetColWidth(sheetName, "B", "B", 40)
+	errColC := f.SetColWidth(sheetName, "C", "C", 50)
+	errColD := f.SetColWidth(sheetName, "D", "D", 5)
+
+	if errColA != nil || errColB != nil || errColC != nil || errColD != nil {
+		respondWithError(w, 500, "Error customizing file structure")
+		return
+	}
+
+	currentGroupCode := ""
+	currentStudent := ""
+	rowIndex := 1
+	for _, row := range underachieversData {
+		if currentGroupCode != row.GroupCode {
+			currentGroupCode = row.GroupCode
+			err = f.SetSheetRow(sheetName, fmt.Sprintf("A%v", rowIndex), &[]interface{}{currentGroupCode})
+			if err != nil {
+				respondWithError(w, 500, fmt.Sprintf("Error filling sheet with group data at row %v: %s", rowIndex, err.Error()))
+				return
+			}
+			rowIndex++
+		}
+
+		if currentStudent != row.Student {
+			currentStudent = row.Student
+			err = f.SetSheetRow(sheetName, fmt.Sprintf("B%v", rowIndex), &[]interface{}{currentStudent})
+			if err != nil {
+				respondWithError(w, 500, fmt.Sprintf("Error filling sheet with student data at row %v: %s", rowIndex, err.Error()))
+				return
+			}
+			rowIndex++
+		}
+
+		err = f.SetSheetRow(sheetName, fmt.Sprintf("C%v", rowIndex), &[]interface{}{row.Class, row.Res.Int32})
+
+		if err != nil {
+			respondWithError(w, 500, fmt.Sprintf("Error filling sheet with students data at row %v: %s", rowIndex, err.Error()))
+			return
+		}
+
+		rowIndex++
+	}
+
+	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=Неаттестованные_%s_%v.xlsx", sheetName, params.Month))
+
+	err = f.Write(w)
+	if err != nil {
+		respondWithError(w, 500, "Error generating file")
 	}
 }

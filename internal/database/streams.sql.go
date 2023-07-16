@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"github.com/google/uuid"
 )
 
 const clearStreamsTable = `-- name: clearStreamsTable :exec
@@ -16,4 +17,17 @@ DELETE from streams
 func (q *Queries) ClearStreamsTable(ctx context.Context) error {
 	_, err := q.db.ExecContext(ctx, clearStreamsTable)
 	return err
+}
+
+const getStreamByID = `-- name: GetStreamByID :one
+SELECT name
+from streams
+where id = $1
+`
+
+func (q *Queries) GetStreamByID(ctx context.Context, id uuid.UUID) (string, error) {
+	row := q.db.QueryRowContext(ctx, getStreamByID, id)
+	var name string
+	err := row.Scan(&name)
+	return name, err
 }

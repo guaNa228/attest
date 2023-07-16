@@ -35,6 +35,35 @@ func (apiCfg *apiConfig) handlerCreateClass(w http.ResponseWriter, r *http.Reque
 	respondWithJSON(w, 201, classToCreate)
 }
 
+func (apiCfg *apiConfig) handlerGetStreams(w http.ResponseWriter, r *http.Request, user db.User) {
+
+	type parameters struct {
+		Streams []db.GetAllStreamsRow `json:"streams"`
+		Months  []db.MonthEnum        `json:"months"`
+	}
+
+	allStreams, err := apiCfg.DB.GetAllStreams(r.Context())
+	if err != nil {
+		respondWithError(w, 400, fmt.Sprintf("Couldn't get streams: %v", err))
+		return
+	}
+
+	openedMonths, err := apiCfg.DB.GetOpenedMonths(r.Context())
+	if err != nil {
+		respondWithError(w, 400, "No months with opened attestation")
+		return
+	}
+
+	params := parameters{Streams: allStreams, Months: openedMonths}
+
+	if err != nil {
+		respondWithError(w, 400, fmt.Sprintf("Error encoding JSON: %s", err))
+		return
+	}
+
+	respondWithJSON(w, 200, params)
+}
+
 func (apiCfg *apiConfig) handlerDeleteClass(w http.ResponseWriter, r *http.Request, user db.User) {
 	const instance = "class"
 	const paramToSearch = "classToDeleteID"

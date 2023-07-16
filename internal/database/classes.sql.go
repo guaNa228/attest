@@ -47,3 +47,45 @@ func (q *Queries) ClearClassesTable(ctx context.Context) error {
 	_, err := q.db.ExecContext(ctx, clearClassesTable)
 	return err
 }
+
+const getAllStreams = `-- name: GetAllStreams :many
+SELECT DISTINCT s.id,
+    s.name
+from attestation a,
+    workloads w,
+    groups g,
+    streams s
+where w.group_id = g.id
+    and g.stream = s.id
+    and a.workload = w.id
+`
+
+type GetAllStreamsRow struct {
+	ID   uuid.UUID `json:"id"`
+	Name string `json:"name"`
+}
+
+func (q *Queries) GetAllStreams(ctx context.Context) ([]GetAllStreamsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllStreams)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllStreamsRow
+	for rows.Next() {
+		var i GetAllStreamsRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+
