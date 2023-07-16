@@ -56,7 +56,7 @@ WHERE id = $1
 
 type UpdateAttestationRowParams struct {
 	ID      uuid.UUID
-	Result  sql.NullBool
+	Result  sql.NullInt32
 	Comment sql.NullString
 }
 
@@ -80,7 +80,7 @@ WHERE a.student = $1
 
 type GetStudentsAttestationDataRow struct {
 	Class   string `json:"class"`
-	Result  sql.NullBool `json:"result"`
+	Result  sql.NullInt32 `json:"result"`
 	Month   MonthEnum `json:"month"`
 	Comment sql.NullString `json:"comment"`
 }
@@ -194,7 +194,7 @@ type GetWorkloadAttestationDataRow struct {
 	ID      uuid.UUID `json:"id"`
 	Name    string `json:"student"`
 	Month   MonthEnum `json:"month"`
-	Result  sql.NullBool `json:"result"`
+	Result  sql.NullInt32 `json:"result"`
 	Comment sql.NullString `json:"comment"`
 }
 

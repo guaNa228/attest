@@ -78,7 +78,6 @@ func StartParsing(logChan *chan string, errorChan *chan error, params Parameters
 }
 
 func ParseFaculty(url string, parsingLogsChannel *chan string, parsingErrorsChannel *chan error, facultiesWg *sync.WaitGroup, dataChannel chan *FacultyParsed, dateToParse string) {
-	// Make an HTTP GET request to the URL
 	response, err := http.Get(url)
 	if err != nil {
 		*parsingErrorsChannel <- err
@@ -86,7 +85,7 @@ func ParseFaculty(url string, parsingLogsChannel *chan string, parsingErrorsChan
 	}
 	defer response.Body.Close()
 	defer facultiesWg.Done()
-	// Parse the HTML document
+
 	doc, err := goquery.NewDocumentFromReader(response.Body)
 	if err != nil {
 		*parsingErrorsChannel <- err

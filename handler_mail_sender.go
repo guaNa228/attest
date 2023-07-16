@@ -48,7 +48,7 @@ func (apiCfg *apiConfig) handleEmailSending(w http.ResponseWriter, r *http.Reque
 	sendingWg := sync.WaitGroup{}
 
 	for _, user := range dbGetUsersToSend {
-		if user.Email.String == "frolov.go@edu.spbstu.ru" {
+		if user.Email.String == "frolov.go@edu.spbstu.ru" || user.Email.String == "turalchuk_ka@spbstu.ru" {
 			sendingWg.Add(1)
 			go sendEmail(user, &logChan, &usersToUpdateChan, &sendingWg, &dialer, &readingWg)
 		}

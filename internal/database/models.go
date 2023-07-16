@@ -70,10 +70,9 @@ type Attestation struct {
 	Workload uuid.UUID `json:"workload"`
 	Student  uuid.UUID `json:"student"`
 	Month    MonthEnum `json:"month"`
-	Result   sql.NullBool `json:"result"`
+	Result   sql.NullInt32 `json:"result"`
 	Comment  sql.NullString `json:"comment"`
 }
-
 
 type Program struct {
 	ID         uuid.UUID `json:"id"`
@@ -124,14 +123,4 @@ type Workload struct {
 	GroupID uuid.UUID `json:"group_id"`
 	Class   uuid.UUID `json:"class_id"`
 	Teacher uuid.UUID `json:"teacher_id"`
-}
-
-//Old 
-type SemesterActivity struct {
-	ID        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	ClassID   uuid.UUID `json:"class_id"`
-	GroupID   uuid.UUID `json:"group_id"`
-	TeacherID uuid.UUID `json:"teacher_id"`
 }

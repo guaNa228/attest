@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"sync"
 
 	"github.com/go-chi/chi"
@@ -39,7 +40,7 @@ func (apiCfg *apiConfig) handleAttestationSpawn(w http.ResponseWriter, r *http.R
 			Student:  preAttestationItem.Student,
 			Workload: preAttestationItem.Workload,
 			Month:    db.MonthEnum(params.MonthEnum),
-			Result:   sql.NullBool{Valid: false},
+			Result:   sql.NullInt32{Valid: false},
 			Comment:  sql.NullString{Valid: false},
 		})
 	}
@@ -139,17 +140,21 @@ func (apiCfg *apiConfig) handleAttestationPost(w http.ResponseWriter, r *http.Re
 	}
 
 	for _, attestationToUpdate := range params.Data {
-		result := sql.NullBool{}
-		if attestationToUpdate.Result == "true" {
-			result = sql.NullBool{Valid: true, Bool: true}
-		} else if attestationToUpdate.Result == "false" {
-			result = sql.NullBool{Valid: true, Bool: false}
+		result := sql.NullInt32{}
+		if attestationToUpdate.Result != "null" {
+			attestationNumber, err := strconv.Atoi(attestationToUpdate.Result)
+			if err != nil {
+				respondWithError(w, 400, fmt.Sprintf("Invalid attestation result: %s", attestationToUpdate.Result))
+				return
+			}
+			result = sql.NullInt32{Valid: true, Int32: int32(attestationNumber)}
 		} else if attestationToUpdate.Result == "null" {
-			result = sql.NullBool{Valid: false, Bool: false}
+			result = sql.NullInt32{Valid: false}
 		} else {
 			respondWithError(w, 400, "Error parsing JSON: wrong result value")
 			return
 		}
+
 		comment := sql.NullString{}
 		if attestationToUpdate.Comment != "" {
 			comment = sql.NullString{Valid: true, String: attestationToUpdate.Comment}

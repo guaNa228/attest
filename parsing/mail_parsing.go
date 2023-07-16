@@ -110,7 +110,6 @@ func parseTeachersMailsChunk(teachersDataChunk []*db.GetTeachersWithUniqueNameRo
 			}
 		}
 	}
-
 }
 
 func parseSingleTeacher(id uuid.UUID, name string, facultyPrefix string, dataChan *chan *ParsedTeachersEmails) error {
