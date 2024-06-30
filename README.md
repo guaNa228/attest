@@ -1,6 +1,6 @@
 # Attestation Service Backend
 
-This repository contains the backend code for an attestation service used in a university setting. The service is developed in Go and provides various functionalities related to student attestation and administrative operations.
+This repository contains the backend code for an attestation service used in a SPbSTU setting. The service is developed in Go and provides various functionalities related to student monthly attestation and administrative operations.
 
 ## Features
 
@@ -35,3 +35,17 @@ This repository contains the backend code for an attestation service used in a u
    ```sh
    git clone https://github.com/guaNa228/attest.git
    cd attest
+2. Install dependencies:
+   ```sh
+   go mod download
+3. Set up the database using the scripts in the sql directory:
+   ```sh
+   psql -U yourusername -d yourdatabase -f sql/setup.sql
+
+### Running the Service
+1. Compile the code:
+   ```sh
+   go build -o attest
+2. Run the service:
+   ```sh
+   ./attest
